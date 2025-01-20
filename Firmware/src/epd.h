@@ -22,3 +22,9 @@ void epd_update(struct date_time _time, uint16_t battery_mv, int16_t temperature
 
 void epd_display(struct date_time _time, uint16_t battery_mv, int16_t temperature, uint8_t full_or_partial);
 void epd_display_time_with_date(struct date_time _time, uint16_t battery_mv, int16_t temperature, uint8_t full_or_partial);
+void epd_display_info(struct date_time _time, uint16_t battery_mv, int16_t temperature, uint8_t full_or_partial);
+void epd_display_my(struct date_time _time, uint16_t battery_mv, int16_t temperature, uint8_t full_or_partial);
+
+void drawCalendar(struct date_time _time, uint16_t battery_mv, int16_t temperature, uint8_t full_or_partial);
+int calculateDayOfWeek(struct date_time date);
+int getDaysInMonth(int month, int year);
