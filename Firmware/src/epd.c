@@ -19,6 +19,7 @@
 extern const uint8_t ucMirror[];
 #include "font_60.h"
 #include "font16.h"
+#include "font8.h"
 #include "font16zh.h"
 #include "font30.h"
 
@@ -584,27 +585,40 @@ void epd_display_my(struct date_time _time, uint16_t battery_mv, int16_t tempera
 
 
 void drawCalendar(struct date_time _time, uint16_t battery_mv, int16_t temperature, uint8_t full_or_partial) {
-    const char *months[] = {"Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno",
-                           "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"};
+    const char *months[] = {"Gen", "Feb", "Mar", "Apr", "Mag", "Giu",
+                           "Lug", "Ago", "Set", "Ott", "Nov", "Dic"};
     const char *weekdays[] = {"L", "M", "M", "G", "V", "S", "D"};
     char buffer[32];
-    int x=32, y=0;
-    int cell_width = 34;  // larghezza di ogni cella
-    int cell_height = 17; // altezza di ogni cella
+    int x=48, y=16;
+    int cell_width = 14;  // larghezza di ogni cella
+    int cell_height = 10; // altezza di ogni cella
+
+
+    
 
     epd_clear();
 
     obdCreateVirtualDisplay(&obd, epd_width, epd_height, epd_temp);
     obdFill(&obd, 0, 0); // fill with white
+
+        
+    // Disegna un rettangolo attorno al calendario
+    
+    obdRectangle(&obd, 
+                x - 1, y + 23,  // angolo superiore sinistro
+                x + (7 * cell_width), y + 24 + (5 * cell_height), // angolo inferiore destro
+                1, 0); // colore nero, non riempito
+              
     
     // Stampa mese e anno nella parte superiore
     sprintf(buffer, "%s %d", months[_time.tm_month - 1], _time.tm_year);
-    obdWriteString(&obd, 0, x + 30, y, buffer, 1, 0, 1);
-    
+    obdWriteStringCustom(&obd, (GFXfont *)&Dialog_plain_16, x, y, buffer, 1);
+
+
     // Disegna i giorni della settimana (intestazione)
     for(int i = 0; i < 7; i++) {
-        obdWriteString(&obd, 0, x + (i * cell_width), y + 25, 
-                      (char*)weekdays[i], 1, 1, 1); // invertito
+        obdScaledString(&obd, x + (i * cell_width), y + 18, (char*)weekdays[i], FONT_8x8, 0, 256, 256, 0);
+        obdDrawLine(&obd, x + (i * cell_width) +15, y+18, x + (i * cell_width) +15, y+18+56, 1, 0);
     }
     
     // Calcola il giorno della settimana del primo giorno del mese
@@ -624,20 +638,15 @@ void drawCalendar(struct date_time _time, uint16_t battery_mv, int16_t temperatu
                 sprintf(buffer, "%2d", day);
                 // Inverte il colore per il giorno corrente
                 int is_current = (day == _time.tm_day);
-                obdWriteString(&obd, 0, 
-                             x + (col * cell_width),
-                             y + 40 + (row * cell_height),
-                             buffer, 1, is_current, 1);
+                //obdWriteStringCustom(&obd, (GFXfont *)&DialogInput_plain_8, x + (col * cell_width), y + 34 + (row * cell_height), buffer, 1);
+                obdScaledString(&obd, x + (col * cell_width), y + 24 + (row * cell_height), buffer, FONT_6x8, is_current, 256, 256, 0);
+                //obdWriteString(&obd, 0, x + (col * cell_width), y + 24 + (row * cell_height), buffer, FONT_8x8, is_current, 1);
                 day++;
             }
         }
+        obdDrawLine(&obd, x, y+24+(row * cell_height), x+ (7 * cell_width), y+24+(row * cell_height), 1, 0);
     }
-    
-    // Disegna un rettangolo attorno al calendario
-    obdRectangle(&obd, 
-                x - 5, y + 20,  // angolo superiore sinistro
-                x + (7 * cell_width), y + 40 + (5 * cell_height), // angolo inferiore destro
-                1, 0); // colore nero, non riempito
+
 
     FixBuffer(epd_temp, epd_buffer, epd_width, epd_height);
 
