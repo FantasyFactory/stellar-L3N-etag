@@ -71,4 +71,10 @@ void cmd_parser(void * p){
 	else if(inData == 0xE2){// force set an EPD scene
 		set_EPD_wait_flush();
 	}
+	else if(inData == 0x80){// switch off led
+		set_led_color(0);
+	}
+	else if(inData == 0x81){// switch ON led
+		set_led_color(req->dat[1]);
+	}
 }

@@ -31,22 +31,42 @@ _attribute_ram_code_ void set_led_color(uint8_t color)
 {
     switch (color)
     {
-    case 1:
+    case 1: // red
         gpio_write(LED_BLUE, 1);
         gpio_write(LED_RED, 0);
         gpio_write(LED_GREEN, 1);
         break;
-    case 2:
+    case 2: // green
         gpio_write(LED_BLUE, 1);
         gpio_write(LED_RED, 1);
         gpio_write(LED_GREEN, 0);
         break;
-    case 3:
+    case 3: // blue
         gpio_write(LED_BLUE, 0);
         gpio_write(LED_RED, 1);
         gpio_write(LED_GREEN, 1);
         break;
-    default:
+    case 4: // yellow
+        gpio_write(LED_BLUE, 1);
+        gpio_write(LED_RED, 0);
+        gpio_write(LED_GREEN, 0);
+        break;
+    case 5: // Aqua
+        gpio_write(LED_BLUE, 0);
+        gpio_write(LED_RED, 1);
+        gpio_write(LED_GREEN, 0);
+        break;
+     case 6: // Magenta
+        gpio_write(LED_BLUE, 0);
+        gpio_write(LED_RED, 0);
+        gpio_write(LED_GREEN, 1);
+        break; 
+    case 7: // White
+        gpio_write(LED_BLUE, 0);
+        gpio_write(LED_RED, 0);
+        gpio_write(LED_GREEN, 0);
+        break;     
+    default:    // off
         gpio_write(LED_BLUE, 1);
         gpio_write(LED_RED, 1);
         gpio_write(LED_GREEN, 1);
