@@ -651,13 +651,26 @@ void drawCalendar(struct date_time _time, uint16_t battery_mv, int16_t temperatu
             int current_pos = row * 7 + col;
             if(current_pos >= first_day && day <= max_days) {
                 sprintf(buffer, "%2d", day);
+                /*struct date_time check_date = _time;
+                check_date.tm_day = day;
+                char *holiday_name = NULL;
+                int is_holiday = isHoliday(check_date, &holiday_name);
                 // Inverte il colore per il giorno corrente
+                */
                 int is_current = (day == _time.tm_day);
+                // Usa il colore appropriato (rosso per festivi)
+                uint8_t text_color = is_holiday ? 2 : 1;  // 2 = rosso, 1 = nero
                 obdScaledString(&obd, cal_x + (col * cell_width) +1 + is_current, cal_y + 16 + (row * cell_height) - is_current, buffer, FONT_6x8, is_current, 256, 256, 0);
                 day++;
             }
         }
         obdDrawLine(&obd, cal_x, cal_y+14+(row * cell_height), cal_x+ (7 * cell_width), cal_y+14+(row * cell_height), 1, 0);
+    }
+    struct date_time check_date = _time;
+    char *holiday_name = NULL;
+    int is_holiday = isHoliday(_time, &holiday_name);
+    if(is_holiday) {
+        obdScaledString(&obd, cal_x, cal_y + 18 + (5 * cell_height), holiday_name, FONT_6x8, 0, 256, 256, 0);
     }
 
     // Orologio
@@ -724,4 +737,84 @@ int getDaysInMonth(int month, int year) {
     return days[month-1];
 }
 
+
+// Definizione di una struttura per le festività fisse
+struct holiday {
+    int day;
+    int month;
+    const char *name;
+};
+
+// Array delle festività fisse (potrebbero essere definite come const globale)
+const struct holiday fixed_holidays[] = {
+    {1, 1, "Capodanno"},
+    {6, 1, "Epifania"},
+    {25, 4, "Liberazione"},
+    {1, 5, "Festa del Lavoro"},
+    {2, 6, "Repubblica"},
+    {15, 8, "Ferragosto"},
+    {1, 11, "Tutti i Santi"},
+    {8, 12, "Immacolata"},
+    {25, 12, "Natale"},
+    {26, 12, "S.Stefano"},
+    {0, 0, NULL}  // terminatore
+};
+
+// Funzione per calcolare la Pasqua (algoritmo di Meeus/Jones/Butcher)
+void calculateEaster(int year, int *easter_month, int *easter_day) {
+    int a = year % 19;
+    int b = year / 100;
+    int c = year % 100;
+    int d = b / 4;
+    int e = b % 4;
+    int f = (b + 8) / 25;
+    int g = (b - f + 1) / 3;
+    int h = (19 * a + b - d - g + 15) % 30;
+    int i = c / 4;
+    int k = c % 4;
+    int l = (32 + 2 * e + 2 * i - h - k) % 7;
+    int m = (a + 11 * h + 22 * l) / 451;
+    *easter_month = (h + l - 7 * m + 114) / 31;
+    *easter_day = ((h + l - 7 * m + 114) % 31) + 1;
+}
+
+// Funzione per verificare se una data è festiva
+int isHoliday(struct date_time date, char **holiday_name) {
+    // Controllo festività fisse
+    for(int i = 0; fixed_holidays[i].day != 0; i++) {
+        if(date.tm_day == fixed_holidays[i].day && 
+           date.tm_month == fixed_holidays[i].month) {
+            if(holiday_name) *holiday_name = (char*)fixed_holidays[i].name;
+            return 1;
+        }
+    }
+    
+    // Controllo domeniche
+    if(calculateDayOfWeek(date) == 6) {  // 6 = domenica
+        if(holiday_name) *holiday_name = "Domenica";
+        return 1;
+    }
+    
+    // Calcolo Pasqua e festività correlate
+    int easter_month, easter_day;
+    calculateEaster(date.tm_year, &easter_month, &easter_day);
+    
+    // Pasqua
+    if(date.tm_day == easter_day && date.tm_month == easter_month) {
+        if(holiday_name) *holiday_name = "Pasqua";
+        return 1;
+    }
+    
+    // Lunedì dell'Angelo (Pasquetta)
+    struct date_time easter = date;
+    easter.tm_day = easter_day;
+    easter.tm_month = easter_month;
+    // Aggiungi un giorno a easter per ottenere Pasquetta
+    if(date.tm_day == easter_day + 1 && date.tm_month == easter_month) {
+        if(holiday_name) *holiday_name = "Pasquetta";
+        return 1;
+    }
+    
+    return 0;
+}
 
