@@ -659,7 +659,7 @@ void drawCalendar(struct date_time _time, uint16_t battery_mv, int16_t temperatu
                 */
                 int is_current = (day == _time.tm_day);
                 // Usa il colore appropriato (rosso per festivi)
-                uint8_t text_color = is_holiday ? 2 : 1;  // 2 = rosso, 1 = nero
+                uint8_t text_color = 1; //is_holiday ? 2 : 1;  // 2 = rosso, 1 = nero
                 obdScaledString(&obd, cal_x + (col * cell_width) +1 + is_current, cal_y + 16 + (row * cell_height) - is_current, buffer, FONT_6x8, is_current, 256, 256, 0);
                 day++;
             }
