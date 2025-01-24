@@ -1,0 +1,14 @@
+https://dmitry.gr/?r=05.Projects&proj=29.%20eInk%20Price%20Tags#_TOC_f362080585317cf3478f5607d6857217 uno che ha fatto belle cose
+https://www.reddit.com/r/hardwarehacking/comments/qvcocx/solum_newton_bwy_normal_esl_tag/ discussioni solum_newton
+https://github.com/atc1441/ZBS_Flasher/tree/main ??
+https://github.com/OpenEPaperLink/
+https://github.com/OpenEPaperLink/OpenEPaperLink/issues/304 solum 5.85"
+https://blog.jirkabalhar.cz/2024/11/solum-newton-m3-teardown-and-firmware-dump/
+https://hackaday.com/2019/02/25/e-ink-price-tags-fall-off-store-shelves-onto-your-workbench/
+http://furrtek.free.fr/index.php?a=esl
+
+https://github.com/dustybee/HanshowESL/tree/main HanshowESL molto stringato, da confrontare
+https://github.com/atc1441/Hanshow-Auto-Updater/tree/main
+https://github.com/atc1441/ATC_TLSR_Paper/tree/main the original one 
+
+https://github.com/atc1441/ATC_MiThermometer TERMOMETRO MI https://www.youtube.com/watch?v=AD2KduDTjf8
