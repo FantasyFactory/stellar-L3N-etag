@@ -2,7 +2,6 @@ import asyncio
 import struct
 from datetime import datetime
 
-import numpy as np
 from PIL import Image
 
 from bleak import BleakClient, BleakScanner

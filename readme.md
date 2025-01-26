@@ -21,6 +21,62 @@
   - visualizza il nome del device
   - visualizza la percentuale della batteria
 
+### Python tool
+```
+EPaper BLE Controller /python_tools/myesl.py
+
+options:
+  -h, --help            show this help message and exit
+  -scan                 Scan for EPaper devices
+  -address ADDRESS      BLE device address
+  -name NAME            BLE device name
+  -setmode {0,1,2,3,4,5}
+                        Set display mode (0-5)
+
+options:
+  -h, --help            show this help message and exit
+  -scan                 Scan for EPaper devices
+  -address ADDRESS      BLE device address
+  -name NAME            BLE device name
+  -setmode {0,1,2,3,4,5}
+                        Set display mode (0-5)
+  -h, --help            show this help message and exit
+  -scan                 Scan for EPaper devices
+  -address ADDRESS      BLE device address
+  -name NAME            BLE device name
+  -setmode {0,1,2,3,4,5}
+                        Set display mode (0-5)
+  -scan                 Scan for EPaper devices
+  -address ADDRESS      BLE device address
+  -name NAME            BLE device name
+  -setmode {0,1,2,3,4,5}
+                        Set display mode (0-5)
+  -name NAME            BLE device name
+  -setmode {0,1,2,3,4,5}
+                        Set display mode (0-5)
+  -setmode {0,1,2,3,4,5}
+                        Set display mode (0-5)
+  -screenblack          Set screen black
+                        Set display mode (0-5)
+  -screenblack          Set screen black
+  -screenblack          Set screen black
+  -screenwhite          Set screen white
+  -screenrefresh        Refresh screen
+  -screenrefresh        Refresh screen
+  -fullpicturerefresh   Full picture refresh
+  -partialpicturerefresh
+                        Partial picture refresh
+  -uploadpicture UPLOADPICTURE
+                        Upload picture file
+  -dither {none,floydsteinberg,bayer,atkinson}
+                        Dithering mode
+  -setdatetime [SETDATETIME]
+                        Set datetime with optional hour offset
+  -blink {0,1,2,3,4,5,6,7}
+                        Set LED color (1=Red,2=Green,3=Blue,4=Yellow,5=Aqua,6=Magenta,7=White,0=Off)
+  -gettemp              Get temperature
+  -getbattery           Get battery level
+```
 ### segue readme.md originale
 ---------------------------------------------------------------------------------
 
