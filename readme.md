@@ -33,7 +33,6 @@ options:
   -setmode {0,1,2,3,4,5}
   -screenwhite          Set screen white
   -screenrefresh        Refresh screen
-  -screenrefresh        Refresh screen
   -fullpicturerefresh   Full picture refresh
   -partialpicturerefresh
                         Partial picture refresh
