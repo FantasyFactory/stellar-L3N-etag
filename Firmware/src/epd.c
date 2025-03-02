@@ -607,12 +607,12 @@ void epd_myScene(struct date_time _time, uint16_t battery_mv, int16_t temperatur
     char buffer[32];
 
     const int cal_x=48;
-    const int cal_y=0;
+    const int cal_y=1;
 
     const int clk_x=150;
     const int clk_y=40;
 
-    const int tgr_x=194;
+    const int tgr_x=150;
     const int tgr_y=96;
 
     epd_clear();
@@ -644,24 +644,25 @@ void epd_myScene(struct date_time _time, uint16_t battery_mv, int16_t temperatur
 void drawTempGraph(OBDISP *pOBD, struct date_time _time, int tgr_x, int tgr_y)  {
     uint8_t day_min=99;
     uint8_t day_max=0;
+    uint8_t grx_offset=tgr_x+44;
     char buffer[32];
 
     for(int tx = 0; tx < 96; tx++) {
         if(min_temp[tx] < day_min) day_min = min_temp[tx];
         if(max_temp[tx] > day_max) day_max = max_temp[tx];
         for(int ty = min_temp[tx]*2; ty <= max_temp[tx]*2; ty+=2) {
-            obdSetPixel(pOBD, tgr_x + tx, tgr_y - ty +(tx%2) , 1, 0);
+            obdSetPixel(pOBD, grx_offset + tx, tgr_y - ty +(tx%2) , 1, 0);
         }
-        if(day_temp[tx]!=127) obdSetPixel(pOBD, tgr_x +tx, tgr_y - (day_temp[tx]*2) -1 +(tx%2), 1, 0);
+        if(day_temp[tx]!=127) obdSetPixel(pOBD, grx_offset +tx, tgr_y - (day_temp[tx]*2) -1 +(tx%2), 1, 0);
     }
     sprintf(buffer, "%d", EPD_read_temp());
     obdWriteStringCustom(pOBD, (GFXfont *)&Special_Elite_Regular_30, tgr_x, tgr_y - 28, (char *)buffer, 1);
 
     int temp_idx=_time.tm_hour*4+_time.tm_min/15;
     sprintf(buffer, "day: da %d a %d", day_min, day_max);
-    obdWriteStringCustom(pOBD, (GFXfont *)&Dialog_plain_16, tgr_x, tgr_y-6, (char *)buffer, 1);
+    obdScaledString(pOBD, grx_offset, tgr_y-6, (char *)buffer, FONT_8x8, 0, 256, 256, 0);
     sprintf(buffer, "ora: da %d a %d", min_temp[temp_idx], min_temp[temp_idx]);
-    obdWriteStringCustom(pOBD, (GFXfont *)&Dialog_plain_16, tgr_x, tgr_y+8, (char *)buffer, 1);
+    obdScaledString(pOBD, grx_offset, tgr_y+2, (char *)buffer, FONT_8x8, 0, 256, 256, 0);
 }
 
 void drawClock(OBDISP *pOBD, struct date_time _time, int cl_x, int cl_y) {
@@ -701,6 +702,7 @@ void drawCalendar(OBDISP *pOBD, struct date_time _time, int cal_x, int cal_y) {
     sprintf(buffer, "%s %d", months[_time.tm_month - 1], _time.tm_year);
     obdWriteStringCustom(pOBD, (GFXfont *)&Dialog_plain_16, cal_x, cal_y, buffer, 1);
 
+    cal_y +=1; // sposta y più in basso per separare il calendario dalla data
 
     // Disegna un rettangolo attorno al calendario
     obdRectangle(pOBD, 
@@ -710,7 +712,7 @@ void drawCalendar(OBDISP *pOBD, struct date_time _time, int cal_x, int cal_y) {
               
     // Disegna i giorni della settimana (intestazione)
     for(int i = 0; i < 7; i++) {
-        obdScaledString(pOBD, cal_x + 3 + (i * cell_width), cal_y + 6, (char*)weekdays[i], FONT_8x8, 0, 256, 256, 0);
+        obdScaledString(pOBD, cal_x + 3 + (i * cell_width), cal_y + 5, (char*)weekdays[i], FONT_8x8, 0, 256, 256, 0);
         obdDrawLine(pOBD, cal_x + (i * cell_width) , cal_y+4, cal_x + (i * cell_width), cal_y + (6 * cell_height) +2, 1, 0);
     }
     
