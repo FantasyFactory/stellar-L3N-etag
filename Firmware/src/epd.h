@@ -26,11 +26,12 @@ void epd_display_time_with_date(struct date_time _time, uint16_t battery_mv, int
 void epd_display_info(struct date_time _time, uint16_t battery_mv, int16_t temperature, uint8_t full_or_partial);
 void epd_display_my(struct date_time _time, uint16_t battery_mv, int16_t temperature, uint8_t full_or_partial);
 void epd_myScene(struct date_time _time, uint16_t battery_mv, int16_t temperature, uint8_t full_or_partial);
-void drawTempGraph(OBDISP *pOBD, struct date_time _time, int tgr_x, int tgr_y);
+void drawTempGraph(OBDISP *pOBD, struct date_time _time, int tgr_x, int tgr_y, bool draw_placeholder);
+uint8_t scaleTemp(uint8_t temp, uint8_t max, uint8_t min, uint8_t height);
 void drawClock(OBDISP *pOBD, struct date_time _time, int cl_x, int cl_y);
 void drawMAC(OBDISP *pOBD, int mac_x, int mac_y);
 void drawBattery(OBDISP *pOBD, uint16_t battery_mv, int bat_x, int bat_y);
-void drawCalendar(OBDISP *pOBD, struct date_time _time, int cal_x, int cal_y);
+void drawCalendar(OBDISP *pOBD, struct date_time _time, int cal_x, int cal_y, bool draw_placeholder); 
 
 int calculateDayOfWeek(struct date_time date);
 int getDaysInMonth(int month, int year);
