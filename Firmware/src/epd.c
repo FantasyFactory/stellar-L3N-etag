@@ -619,13 +619,13 @@ void epd_myScene(struct date_time _time, uint16_t battery_mv, int16_t temperatur
     obdFill(&obd, 0, 0); // fill with white
 
     // Calendario
-    drawCalendar(&obd, _time, 47, 0, true);
+    drawCalendar(&obd, _time, 47, 0, false);
 
     // Orologio
     drawClock(&obd, _time, 150, 1);
  
     //Grafico temperatura
-    drawTempGraph(&obd, _time, temperature, 150, 44, true);
+    drawTempGraph(&obd, _time, temperature, 150, 44, false);
 
     // MAC address
     drawMAC(&obd, 48, 107);
@@ -644,13 +644,13 @@ void drawTempGraph(OBDISP *pOBD, struct date_time _time, int16_t temperature, in
     uint8_t day_max=0;
     uint8_t graph_height=40;
     uint8_t graph_width=96;
-    uint8_t grx_offset=tgr_x+53;
+    uint8_t grx_offset=tgr_x+48;
     uint8_t tempY;
     char buffer[32];
 
     obdRectangle(pOBD, 
         tgr_x , tgr_y,  // angolo superiore sinistro + altezza intestazione
-        tgr_x + graph_width +53, tgr_y + graph_height +2, // angolo inferiore destro + altezza inte + 4 di mergine
+        grx_offset + graph_width, tgr_y + graph_height +2, // angolo inferiore destro + altezza inte + 4 di mergine
         1, 0); // colore nero, non riempito
     obdRectangle(pOBD, 
         grx_offset-1, tgr_y-1,  // angolo superiore sinistro + altezza intestazione
