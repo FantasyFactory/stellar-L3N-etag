@@ -10,5 +10,6 @@ http://furrtek.free.fr/index.php?a=esl
 https://github.com/dustybee/HanshowESL/tree/main HanshowESL molto stringato, da confrontare
 https://github.com/atc1441/Hanshow-Auto-Updater/tree/main
 https://github.com/atc1441/ATC_TLSR_Paper/tree/main the original one 
+https://github.com/reece15/stellar-L3N-etag
 
 https://github.com/atc1441/ATC_MiThermometer TERMOMETRO MI https://www.youtube.com/watch?v=AD2KduDTjf8

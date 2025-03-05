@@ -12,3 +12,5 @@
 void user_init_normal(void);
 void user_init_deepRetn(void);
 void main_loop(void);
+
+void inc_UART_RX_Counter(int);

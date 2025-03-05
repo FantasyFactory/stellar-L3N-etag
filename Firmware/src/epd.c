@@ -625,7 +625,7 @@ void epd_myScene(struct date_time _time, uint16_t battery_mv, int16_t temperatur
     drawClock(&obd, _time, 150, 1);
  
     //Grafico temperatura
-    drawTempGraph(&obd, _time, temperature, 150, 44, false);
+    drawTempGraph(&obd, _time, temperature, 148, 44, false);
 
     // MAC address
     drawMAC(&obd, 48, 107);
@@ -649,12 +649,12 @@ void drawTempGraph(OBDISP *pOBD, struct date_time _time, int16_t temperature, in
     char buffer[32];
 
     obdRectangle(pOBD, 
-        tgr_x , tgr_y,  // angolo superiore sinistro + altezza intestazione
-        grx_offset + graph_width, tgr_y + graph_height +2, // angolo inferiore destro + altezza inte + 4 di mergine
+        tgr_x-1 , tgr_y-1,  // angolo superiore sinistro + altezza intestazione
+        grx_offset + graph_width +3, tgr_y + graph_height +8, // angolo inferiore destro + altezza inte + 4 di mergine
         1, 0); // colore nero, non riempito
     obdRectangle(pOBD, 
-        grx_offset-1, tgr_y-1,  // angolo superiore sinistro + altezza intestazione
-        grx_offset + graph_width, tgr_y + graph_height +2, // angolo inferiore destro + altezza inte + 4 di mergine
+        grx_offset-1, tgr_y,  // angolo superiore sinistro + altezza intestazione
+        grx_offset + graph_width, tgr_y + graph_height +1, // angolo inferiore destro + altezza inte + 4 di mergine
         1, 0); // colore nero, non riempito
     if(draw_placeholder) return;
 
@@ -667,13 +667,13 @@ void drawTempGraph(OBDISP *pOBD, struct date_time _time, int16_t temperature, in
     int temp_idx=_time.tm_hour*4+_time.tm_min/15; // indice nel grafico della temperatura: 96 byte, uno ogni 15 minuti
 
     sprintf(buffer, "%d", day_temp[temp_idx]);  // Temperatura al momento
-    obdWriteStringCustom(pOBD, (GFXfont *)&Special_Elite_Regular_30, tgr_x, tgr_y +20, (char *)buffer, 1);
+    obdWriteStringCustom(pOBD, (GFXfont *)&Special_Elite_Regular_30, tgr_x, tgr_y +23, (char *)buffer, 1);
     obdScaledString(pOBD, tgr_x+34, tgr_y+2, "o", FONT_8x8, 0, 256, 256, 0);
 
-    sprintf(buffer, "(%d-%d)", day_min, day_max); // Minima e massima del grafico
-    obdScaledString(pOBD, tgr_x, tgr_y+28, (char *)buffer, FONT_6x8, 0, 256, 256, 0);
-    sprintf(buffer, "(%d-%d)", min_temp[temp_idx], min_temp[temp_idx]); // Minima e massima nella stessa ora
-    obdScaledString(pOBD, tgr_x, tgr_y+38, (char *)buffer, FONT_6x8, 0, 256, 256, 0);
+    sprintf(buffer, "G:%d-%d", day_min, day_max); // Minima e massima del grafico
+    obdScaledString(pOBD, tgr_x+1, tgr_y+25, (char *)buffer, FONT_6x8, 0, 256, 256, 0);
+    sprintf(buffer, "H:%d-%d", min_temp[temp_idx], min_temp[temp_idx]); // Minima e massima nella stessa ora
+    obdScaledString(pOBD, tgr_x+1, tgr_y+34, (char *)buffer, FONT_6x8, 0, 256, 256, 0);
 
     for(int ty = day_min; ty <= day_max; ty+=2) {
             obdDrawLine(pOBD, grx_offset -3, tgr_y + graph_height - scaleTemp(ty,day_max,day_min,graph_height), grx_offset -1, tgr_y + graph_height - scaleTemp(ty,day_max,day_min,graph_height), 1, 0);
@@ -700,6 +700,11 @@ uint8_t scaleTemp(uint8_t temp, uint8_t max, uint8_t min, uint8_t height) {
     return ((height/(max-min))*(temp-min));
 }
 
+void drawLabel(OBDISP *pOBD, char *text, int x, int y)  
+{
+    obdScaledString(pOBD, x, y, text, FONT_8x8, 0, 256, 256, 0);
+}
+
 void drawClock(OBDISP *pOBD, struct date_time _time, int cl_x, int cl_y) {
     char buffer[32];
     sprintf(buffer, "%02d:%02d", _time.tm_hour, _time.tm_min);
@@ -716,7 +721,7 @@ void drawBattery(OBDISP *pOBD, uint16_t battery_mv, int bat_x, int bat_y) {
     char buffer[32];
     uint16_t battery_level;
     battery_level = get_battery_level(battery_mv);
-    
+    obdRectangle(pOBD, bat_x, bat_y+4, bat_x +2, bat_y +8, 1, 1);
     obdRectangle(pOBD, bat_x +3, bat_y, bat_x + 43, bat_y +12, 1, 1);
     sprintf(buffer, "%d%%", battery_level);
     obdScaledString(pOBD, bat_x +7, bat_y +3, (char *)buffer, FONT_8x8, 1, 256, 256, 0);
