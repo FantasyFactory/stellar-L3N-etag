@@ -30,7 +30,7 @@ void drawTempGraph(OBDISP *pOBD, struct date_time _time, int16_t temperature, in
 uint8_t scaleTemp(uint8_t temp, uint8_t max, uint8_t min, uint8_t height);
 void drawClock(OBDISP *pOBD, struct date_time _time, int cl_x, int cl_y);
 void drawMAC(OBDISP *pOBD, int mac_x, int mac_y);
-void drawBattery(OBDISP *pOBD, uint16_t battery_mv, int bat_x, int bat_y);
+void drawBattery(OBDISP *pOBD, uint16_t battery_mv, int bat_x, int bat_y, bool vertical);
 void drawCalendar(OBDISP *pOBD, struct date_time _time, int cal_x, int cal_y, bool draw_placeholder); 
 
 int calculateDayOfWeek(struct date_time date);

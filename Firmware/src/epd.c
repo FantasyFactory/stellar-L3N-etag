@@ -619,10 +619,10 @@ void epd_myScene(struct date_time _time, uint16_t battery_mv, int16_t temperatur
     obdFill(&obd, 0, 0); // fill with white
 
     // Calendario
-    drawCalendar(&obd, _time, 47, 0, false);
+    drawCalendar(&obd, _time, 45, 0, false);
 
     // Orologio
-    drawClock(&obd, _time, 150, 1);
+    drawClock(&obd, _time, 144, 1);
  
     //Grafico temperatura
     drawTempGraph(&obd, _time, temperature, 148, 44, false);
@@ -631,7 +631,8 @@ void epd_myScene(struct date_time _time, uint16_t battery_mv, int16_t temperatur
     drawMAC(&obd, 48, 107);
 
     // battery level
-    drawBattery(&obd, battery_mv, 252, 108);
+    drawBattery(&obd, battery_mv, 255, 108, false);
+    drawBattery(&obd, battery_mv, 285, 1, true);
 
     FixBuffer(epd_temp, epd_buffer, epd_width, epd_height);
 
@@ -644,12 +645,12 @@ void drawTempGraph(OBDISP *pOBD, struct date_time _time, int16_t temperature, in
     uint8_t day_max=0;
     uint8_t graph_height=40;
     uint8_t graph_width=96;
-    uint8_t grx_offset=tgr_x+48;
+    uint8_t grx_offset=tgr_x+51;
     uint8_t tempY;
     char buffer[32];
 
     obdRectangle(pOBD, 
-        tgr_x-1 , tgr_y-1,  // angolo superiore sinistro + altezza intestazione
+        tgr_x , tgr_y,  // angolo superiore sinistro + altezza intestazione
         grx_offset + graph_width +3, tgr_y + graph_height +8, // angolo inferiore destro + altezza inte + 4 di mergine
         1, 0); // colore nero, non riempito
     obdRectangle(pOBD, 
@@ -717,14 +718,20 @@ void drawMAC(OBDISP *pOBD, int mac_x, int mac_y) {
     obdScaledString(pOBD, mac_x, mac_y +6, (char *)buffer, FONT_8x8, 0, 256, 256, 0);
 }
 
-void drawBattery(OBDISP *pOBD, uint16_t battery_mv, int bat_x, int bat_y) {   
+void drawBattery(OBDISP *pOBD, uint16_t battery_mv, int bat_x, int bat_y, bool vertical) {   
     char buffer[32];
     uint16_t battery_level;
     battery_level = get_battery_level(battery_mv);
-    obdRectangle(pOBD, bat_x, bat_y+4, bat_x +2, bat_y +8, 1, 1);
-    obdRectangle(pOBD, bat_x +3, bat_y, bat_x + 43, bat_y +12, 1, 1);
     sprintf(buffer, "%d%%", battery_level);
-    obdScaledString(pOBD, bat_x +7, bat_y +3, (char *)buffer, FONT_8x8, 1, 256, 256, 0);
+    if(vertical) {
+        obdRectangle(pOBD, bat_x+5, bat_y, bat_x +7, bat_y +2, 1, 1);
+        obdRectangle(pOBD, bat_x, bat_y+3, bat_x + 10, bat_y +40, 1, 1);
+        obdScaledString(pOBD, bat_x +9, bat_y +7, (char *)buffer, FONT_8x8, 1, 256, 256, ROT_90);
+    } else {
+        obdRectangle(pOBD, bat_x, bat_y+4, bat_x +2, bat_y +8, 1, 1);
+        obdRectangle(pOBD, bat_x +3, bat_y, bat_x + 40, bat_y +12, 1, 1);
+        obdScaledString(pOBD, bat_x +7, bat_y +3, (char *)buffer, FONT_8x8, 1, 256, 256, ROT_0);
+    }
 }
 
 void drawCalendar(OBDISP *pOBD, struct date_time _time, int cal_x, int cal_y, bool draw_placeholder) {
