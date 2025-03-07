@@ -56,6 +56,28 @@ _attribute_ram_code_ uint8_t EPD_BWR_296_detect(void)
     }
     return 1;
 }
+_attribute_ram_code_ uint16_t myEPD_BWR_296_read_temp(void)
+{
+    uint8_t epd_temperature_int = 0 ;
+    uint8_t epd_temperature_dec = 0 ;
+    EPD_WriteCmd(0x04);
+
+    // check BUSY pin
+    EPD_CheckStatus(100);
+
+    // Temperature sensor read from register
+    EPD_WriteCmd(0x1b);
+    epd_temperature_int = EPD_SPI_read();
+    epd_temperature_dec = EPD_SPI_read();
+
+    WaitMs(5);
+
+    // deep sleep
+    EPD_WriteCmd(0x10);
+    EPD_WriteData(0x01);
+
+    return (uint16_t)(epd_temperature_int << 8) | epd_temperature_dec;
+}
 
 _attribute_ram_code_ uint8_t EPD_BWR_296_read_temp(void)
 {

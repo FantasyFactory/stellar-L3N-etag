@@ -145,8 +145,10 @@ _attribute_ram_code_ uint8_t EPD_read_temp(void)
         epd_temperature = EPD_BWR_213_read_temp();
 //    else if (epd_model == 3)
 //        epd_temperature = EPD_BWR_154_read_temp();
-    else if (epd_model == 4 || epd_model == 5)
+    else if (epd_model == 4)
         epd_temperature = EPD_BW_213_ice_read_temp();
+    else if (epd_model == 5)
+        epd_temperature = EPD_BWR_296_read_temp();
 
     EPD_POWER_OFF();
 
@@ -692,7 +694,7 @@ void drawTempGraph(OBDISP *pOBD, struct date_time _time, int16_t temperature, in
         obdSetPixel(pOBD, grx_offset +tx, tgr_y + graph_height - scaleTemp(day_temp[tx],day_max,day_min,graph_height), 1, 0);
     }
 
-    sprintf(buffer, "temp: %d idx=%d = %d %d", temperature, temp_idx,  day_temp[temp_idx], EPD_read_temp());
+    sprintf(buffer, "temp: %d idx=%d = %d %d %d", temperature, temp_idx,  day_temp[temp_idx], EPD_read_temp(), myEPD_BWR_296_read_temp());
     obdScaledString(pOBD, 48, 97, (char *)buffer, FONT_8x8, 0, 256, 256, 0);
 
 }
