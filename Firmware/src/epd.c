@@ -62,6 +62,7 @@ RAM uint8_t min_temp[96]={00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00
 RAM uint8_t max_temp[96]={39,39,39,39, 39,39,39,39, 39,39,39,39, 39,39,39,39, 39,39,39,39, 39,39,39,39, 39,39,39,39, 39,39,39,39, 39,39,39,39, 39,39,39,39, 39,39,39,39, 39,39,39,39, 39,39,39,39, 39,39,39,39, 39,39,39,39, 39,39,39,39, 39,39,39,39, 39,39,39,39, 39,39,39,39, 39,39,39,39, 39,39,39,39, 39,39,39,39, 39,39,39,39, 39,39,39,39};
 */
 RAM uint8_t day_temp[96]={17,17,17,17, 16,16,16,16, 15,15,15,15, 15,15,15,15, 15,15,15,15, 15,15,15,15, 16,16,16,16, 17,17,18,18, 18,18,17,17, 17,17,16,16, 15,15,15,15, 15,15,15,15, 16,17,18,18, 18,18,18,18, 17,17,17,17, 17,17,17,17, 17,17,17,17, 17,17,17,17, 17,17,17,17, 17,17,18,18, 18,18,18,18, 18,18,18,18, 18,18,18,18, 18,18,17,17};
+RAM uint16_t myTemp=0;
 
 // With this we can force a display if it wasnt detected correctly
 void set_EPD_model(uint8_t model_nr)
@@ -151,6 +152,8 @@ _attribute_ram_code_ uint8_t EPD_read_temp(void)
         epd_temperature = EPD_BW_213_ice_read_temp();
         //epd_temperature = EPD_BWR_296_read_temp();
 
+    myTemp = myEPD_BWR_296_read_temp();
+
     EPD_POWER_OFF();
 
     epd_temperature_is_read = 1;
@@ -184,6 +187,8 @@ _attribute_ram_code_ void EPD_Display(unsigned char *image, unsigned char *red_i
     else if (epd_model == 5)
         epd_temperature = EPD_BWR_296_Display_BWR(image, red_image, size, full_or_partial);
         //epd_temperature = EPD_BWR_296_Display(image, size, full_or_partial);
+
+    myTemp = myEPD_BWR_296_read_temp();
 
     epd_temperature_is_read = 1;
     epd_update_state = 1;
@@ -622,19 +627,19 @@ void epd_myScene(struct date_time _time, uint16_t battery_mv, int16_t temperatur
     obdFill(&obd, 0, 0); // fill with white
 
     // Calendario
-    drawCalendar(&obd, _time, 45, 0, false);
+    drawCalendar(&obd, _time, 47, 0, false);
 
     // Orologio
-    drawClock(&obd, _time, 144, 1);
+    drawClock(&obd, _time, 148, 1);
  
     //Grafico temperatura
-    drawTempGraph(&obd, _time, temperature, 148, 44, false);
+    drawTempGraph(&obd, _time, temperature, 148, 42, false);
 
     // MAC address
     drawMAC(&obd, 48, 107);
 
     // battery level
-    drawBattery(&obd, battery_mv, 255, 108, false);
+    drawBattery(&obd, battery_mv, 252, 107, false);
     //drawBattery(&obd, battery_mv, 285, 1, true);
 
     FixBuffer(epd_temp, epd_buffer, epd_width, epd_height);
@@ -650,7 +655,7 @@ void drawTempGraph(OBDISP *pOBD, struct date_time _time, int16_t temperature, in
     uint8_t graph_width=96;
     uint8_t grx_offset=tgr_x+51;
     uint8_t tempY;
-    char buffer[32];
+    char buffer[40];
 
     obdRectangle(pOBD, 
         tgr_x , tgr_y,  // angolo superiore sinistro + altezza intestazione
@@ -695,8 +700,8 @@ void drawTempGraph(OBDISP *pOBD, struct date_time _time, int16_t temperature, in
         obdSetPixel(pOBD, grx_offset +tx, tgr_y + graph_height - scaleTemp(day_temp[tx],day_max,day_min,graph_height), 1, 0);
     }
 
-    uint16_t myTemp = 0x1445;//myEPD_BWR_296_read_temp();
-    sprintf(buffer, "temp: (%u,%u) idx=%d = %d  (%u, %u)", (temperature >> 8) & 0xFF, temperature & 0xFF, temp_idx,  day_temp[temp_idx], (myTemp >> 8) & 0xFF, myTemp & 0xFF);
+    
+    sprintf(buffer, "temp: (%u,%u) idx=%d=%d (%u,%u)", (temperature >> 8) & 0xFF, temperature & 0xFF, temp_idx,  day_temp[temp_idx], (myTemp >> 8) & 0xFF, myTemp & 0xFF);
     obdScaledString(pOBD, 48, 97, (char *)buffer, FONT_8x8, 0, 256, 256, 0);
 
 }

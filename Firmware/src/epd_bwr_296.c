@@ -35,6 +35,7 @@ BWR_296_Len, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 
 };
 
+
 #define EPD_BWR_296_test_pattern 0xA5
 _attribute_ram_code_ uint8_t EPD_BWR_296_detect(void)
 {
@@ -155,6 +156,7 @@ _attribute_ram_code_ uint16_t myEPD_BWR_296_read_temp(void) //copia del bw213ice
 _attribute_ram_code_ uint8_t EPD_BWR_296_read_temp(void)
 {
     uint8_t epd_temperature = 0 ;
+    uint8_t epd_temperature_dec = 0 ;
 
     // SW Reset
     EPD_WriteCmd(0x12);
@@ -222,7 +224,7 @@ _attribute_ram_code_ uint8_t EPD_BWR_296_read_temp(void)
     // Temperature sensor read from register
     EPD_WriteCmd(0x1B);
     epd_temperature = EPD_SPI_read();
-    EPD_SPI_read();
+    epd_temperature_dec = EPD_SPI_read();
 
     WaitMs(5);
 
@@ -230,11 +232,14 @@ _attribute_ram_code_ uint8_t EPD_BWR_296_read_temp(void)
     EPD_WriteCmd(0x10);
     EPD_WriteData(0x01);
 
+    //myTemp = (uint16_t)(epd_temperature << 8) | epd_temperature_dec;
+
     return epd_temperature;
 }
 
 _attribute_ram_code_ uint8_t EPD_BWR_296_Display(unsigned char *image, int size, uint8_t full_or_partial) {
     uint8_t epd_temperature = 0 ;
+    uint8_t epd_temperature_dec = 0 ;
 
     // SW Reset
     EPD_WriteCmd(0x12);
@@ -302,7 +307,7 @@ _attribute_ram_code_ uint8_t EPD_BWR_296_Display(unsigned char *image, int size,
     // Temperature sensor read from register
     EPD_WriteCmd(0x1B);
     epd_temperature = EPD_SPI_read();
-    EPD_SPI_read();
+    epd_temperature_dec = EPD_SPI_read();
 
     WaitMs(5);
 
@@ -349,6 +354,8 @@ _attribute_ram_code_ uint8_t EPD_BWR_296_Display(unsigned char *image, int size,
     // Master Activation
     EPD_WriteCmd(0x20);
 
+    //myTemp = (uint16_t)(epd_temperature << 8) | epd_temperature_dec;
+
     return epd_temperature;
 }
 
@@ -358,6 +365,7 @@ _attribute_ram_code_ uint8_t EPD_BWR_296_Display_BWR(unsigned char *image, unsig
     }
 
     uint8_t epd_temperature = 0 ;
+    uint8_t epd_temperature_dec = 0 ;
 
     // SW Reset
     EPD_WriteCmd(0x12);
@@ -425,7 +433,7 @@ _attribute_ram_code_ uint8_t EPD_BWR_296_Display_BWR(unsigned char *image, unsig
     // Temperature sensor read from register
     EPD_WriteCmd(0x1B);
     epd_temperature = EPD_SPI_read();
-    EPD_SPI_read();
+    epd_temperature_dec = EPD_SPI_read();
 
     WaitMs(5);
 
