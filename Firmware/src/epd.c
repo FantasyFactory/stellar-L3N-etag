@@ -148,7 +148,8 @@ _attribute_ram_code_ uint8_t EPD_read_temp(void)
     else if (epd_model == 4)
         epd_temperature = EPD_BW_213_ice_read_temp();
     else if (epd_model == 5)
-        epd_temperature = EPD_BWR_296_read_temp();
+        epd_temperature = EPD_BW_213_ice_read_temp();
+        //epd_temperature = EPD_BWR_296_read_temp();
 
     EPD_POWER_OFF();
 
@@ -634,7 +635,7 @@ void epd_myScene(struct date_time _time, uint16_t battery_mv, int16_t temperatur
 
     // battery level
     drawBattery(&obd, battery_mv, 255, 108, false);
-    drawBattery(&obd, battery_mv, 285, 1, true);
+    //drawBattery(&obd, battery_mv, 285, 1, true);
 
     FixBuffer(epd_temp, epd_buffer, epd_width, epd_height);
 
@@ -694,7 +695,8 @@ void drawTempGraph(OBDISP *pOBD, struct date_time _time, int16_t temperature, in
         obdSetPixel(pOBD, grx_offset +tx, tgr_y + graph_height - scaleTemp(day_temp[tx],day_max,day_min,graph_height), 1, 0);
     }
 
-    sprintf(buffer, "temp: %d idx=%d = %d %d %d", temperature, temp_idx,  day_temp[temp_idx], EPD_read_temp(), myEPD_BWR_296_read_temp());
+    uint16_t myTemp = 0x1445;//myEPD_BWR_296_read_temp();
+    sprintf(buffer, "temp: (%u,%u) idx=%d = %d  (%u, %u)", (temperature >> 8) & 0xFF, temperature & 0xFF, temp_idx,  day_temp[temp_idx], (myTemp >> 8) & 0xFF, myTemp & 0xFF);
     obdScaledString(pOBD, 48, 97, (char *)buffer, FONT_8x8, 0, 256, 256, 0);
 
 }
