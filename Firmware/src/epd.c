@@ -46,22 +46,22 @@ TIFFIMAGE tiff;
 // 96 values for 24 hours
 //
 //                        00:00        01:00        02:00        03:00        04:00        05:00        06:00        07:00        08:00        09:00        10:00        11:00        12:00        13:00        14:00        15:00        16:00        17:00        18:00        19:00        20:00        21:00        22:00        23:00
-
+/*
 RAM uint8_t min_temp[96]={17,17,17,17, 16,16,16,16, 15,15,15,15, 15,15,15,15, 15,15,15,15, 15,15,15,15, 16,16,16,16, 17,17,18,18, 18,18,17,17, 17,17,16,16, 15,15,15,15, 15,15,15,15, 16,17,18,18, 18,18,18,18, 17,17,17,17, 17,17,17,17, 17,17,17,17, 17,17,17,17, 17,17,17,17, 17,17,18,18, 18,18,18,18, 18,18,18,18, 18,18,18,18, 18,18,17,17};
 RAM uint8_t max_temp[96]={21,20,20,19, 19,19,18,18, 17,17,17,17, 17,17,17,17, 17,17,17,17, 17,17,17,17, 17,18,18,18, 19,20,20,21, 21,21,20,20, 20,20,20,20, 19,19,19,19, 19,19,19,19, 19,20,21,21, 22,22,23,23, 22,22,22,22, 21,21,21,21, 21,21,21,21, 21,21,21,21, 21,21,21,21, 21,21,22,22, 22,22,23,23, 23,23,22,22, 22,22,21,21, 21,21,21,21};
-/*
 RAM uint8_t day_temp[96]={127,127,127,127, 127,127,127,127, 127,127,127,127, 127,127,127,127, 127,127,127,127, 127,127,127,127, 127,127,127,127, 127,127,127,127, 127,127,127,127, 127,127,127,127, 127,127,127,127, 127,127,127,127, 127,127,127,127, 127,127,127,127, 127,127,127,127, 127,127,127,127, 127,127,127,127, 127,127,127,127, 127,127,127,127, 127,127,127,127, 127,127,127,127, 127,127,127,127, 127,127,127,127, 127,127,127,127};
 */
-/*
 RAM uint8_t min_temp[96]={255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255};
-RAM uint8_t max_temp[96]={255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255};
+RAM uint8_t max_temp[96]={00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00};
 RAM uint8_t day_temp[96]={255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255};
-*/
 /*
 RAM uint8_t min_temp[96]={00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00};
 RAM uint8_t max_temp[96]={39,39,39,39, 39,39,39,39, 39,39,39,39, 39,39,39,39, 39,39,39,39, 39,39,39,39, 39,39,39,39, 39,39,39,39, 39,39,39,39, 39,39,39,39, 39,39,39,39, 39,39,39,39, 39,39,39,39, 39,39,39,39, 39,39,39,39, 39,39,39,39, 39,39,39,39, 39,39,39,39, 39,39,39,39, 39,39,39,39, 39,39,39,39, 39,39,39,39, 39,39,39,39, 39,39,39,39};
-*/
+
 RAM uint8_t day_temp[96]={17,17,17,17, 16,16,16,16, 15,15,15,15, 15,15,15,15, 15,15,15,15, 15,15,15,15, 16,16,16,16, 17,17,18,18, 18,18,17,17, 17,17,16,16, 15,15,15,15, 15,15,15,15, 16,17,18,18, 18,18,18,18, 17,17,17,17, 17,17,17,17, 17,17,17,17, 17,17,17,17, 17,17,17,17, 17,17,18,18, 18,18,18,18, 18,18,18,18, 18,18,18,18, 18,18,17,17};
+*/
+
+
 RAM uint16_t myTemp=0;
 
 // With this we can force a display if it wasnt detected correctly
@@ -188,7 +188,7 @@ _attribute_ram_code_ void EPD_Display(unsigned char *image, unsigned char *red_i
         epd_temperature = EPD_BWR_296_Display_BWR(image, red_image, size, full_or_partial);
         //epd_temperature = EPD_BWR_296_Display(image, size, full_or_partial);
 
-    myTemp = myEPD_BWR_296_read_temp();
+    //myTemp = myEPD_BWR_296_read_temp();
 
     epd_temperature_is_read = 1;
     epd_update_state = 1;
@@ -669,8 +669,8 @@ void drawTempGraph(OBDISP *pOBD, struct date_time _time, int16_t temperature, in
 
     // Calcola i valori massimi e minimi del grafico
     for(int tx = 0; tx < 96; tx++) {
-        if(min_temp[tx] < day_min) day_min = min_temp[tx];
-        if(max_temp[tx] > day_max) day_max = max_temp[tx];
+        if((min_temp[tx]!=255) && (min_temp[tx] < day_min)) day_min = min_temp[tx];
+        if((max_temp[tx]!=0) && (max_temp[tx] > day_max)) day_max = max_temp[tx];
     }
 
     int temp_idx=_time.tm_hour*4+_time.tm_min/15; // indice nel grafico della temperatura: 96 byte, uno ogni 15 minuti
@@ -685,19 +685,22 @@ void drawTempGraph(OBDISP *pOBD, struct date_time _time, int16_t temperature, in
     obdScaledString(pOBD, tgr_x+1, tgr_y+41, (char *)buffer, FONT_6x8, 0, 256, 256, 0);
 
     for(int ty = day_min; ty <= day_max; ty+=2) {
-            obdDrawLine(pOBD, grx_offset -3, tgr_y + graph_height - scaleTemp(ty,day_max,day_min,graph_height), grx_offset -1, tgr_y + graph_height - scaleTemp(ty,day_max,day_min,graph_height), 1, 0);
+        obdDrawLine(pOBD, grx_offset -3, tgr_y + graph_height - scaleTemp(ty,day_max,day_min,graph_height), grx_offset -1, tgr_y + graph_height - scaleTemp(ty,day_max,day_min,graph_height), 1, 0);
     }
+    obdDrawLine(pOBD, grx_offset + temp_idx, tgr_y + graph_height, grx_offset + temp_idx, tgr_y + graph_height +2, 1, 0);
 
     for(int tx = 0; tx < graph_width; tx++) {
-        int min_y=scaleTemp(min_temp[tx],day_max,day_min,graph_height);
-        int max_y=scaleTemp(max_temp[tx],day_max,day_min,graph_height);
-        for(int ty = min_y; ty <= max_y; ty++) {
-            if((tx%2==0 && ty%2==0) || (tx%2==1 && ty%2==1)) { // solo se x e y sono pari o x e y sono dispari, in modo da fare un reticolo
-                obdSetPixel(pOBD, grx_offset + tx, tgr_y + graph_height - ty , 1, 0);
+        if(max_temp[tx]==0 && min_temp[tx]==255) {
+            int min_y=scaleTemp(min_temp[tx],day_max,day_min,graph_height);
+            int max_y=scaleTemp(max_temp[tx],day_max,day_min,graph_height);
+            for(int ty = min_y; ty <= max_y; ty++) {
+                if((tx%2==0 && ty%2==0) || (tx%2==1 && ty%2==1)) { // solo se x e y sono pari o x e y sono dispari, in modo da fare un reticolo
+                    obdSetPixel(pOBD, grx_offset + tx, tgr_y + graph_height - ty , 1, 0);
+                }
             }
         }
-        if(day_temp[tx]!=127)
-        obdSetPixel(pOBD, grx_offset +tx, tgr_y + graph_height - scaleTemp(day_temp[tx],day_max,day_min,graph_height), 1, 0);
+        if(day_temp[tx]!=255)
+            obdSetPixel(pOBD, grx_offset +tx, tgr_y + graph_height - scaleTemp(day_temp[tx],day_max,day_min,graph_height), 1, 0);
     }
 
     
