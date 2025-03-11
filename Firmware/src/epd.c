@@ -152,7 +152,7 @@ _attribute_ram_code_ uint8_t EPD_read_temp(void)
         epd_temperature = EPD_BW_213_ice_read_temp();
         //epd_temperature = EPD_BWR_296_read_temp();
 
-    myTemp = myEPD_BWR_296_read_temp();
+    myTemp = EPD_BWR_296_read_temp();
 
     EPD_POWER_OFF();
 

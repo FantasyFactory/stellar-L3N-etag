@@ -153,7 +153,7 @@ _attribute_ram_code_ uint16_t myEPD_BWR_296_read_temp(void) //copia del bw213ice
     return (uint16_t)(epd_temperature_int << 8) | epd_temperature_dec;
 }
 
-_attribute_ram_code_ uint8_t EPD_BWR_296_read_temp(void)
+_attribute_ram_code_ uint16_t EPD_BWR_296_read_temp(void)
 {
     uint8_t epd_temperature = 0 ;
     uint8_t epd_temperature_dec = 0 ;
@@ -232,9 +232,9 @@ _attribute_ram_code_ uint8_t EPD_BWR_296_read_temp(void)
     EPD_WriteCmd(0x10);
     EPD_WriteData(0x01);
 
-    //myTemp = (uint16_t)(epd_temperature << 8) | epd_temperature_dec;
+    return (uint16_t)(epd_temperature << 8) | epd_temperature_dec;
 
-    return epd_temperature;
+    //return epd_temperature;
 }
 
 _attribute_ram_code_ uint8_t EPD_BWR_296_Display(unsigned char *image, int size, uint8_t full_or_partial) {
