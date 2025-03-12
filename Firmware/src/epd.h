@@ -1,5 +1,6 @@
 #pragma once
 #include "etime.h"
+#include "OneBitDisplay.h"
 #define epd_height 128
 #define epd_width 296
 #define epd_buffer_size ((epd_height/8) * epd_width)
@@ -24,7 +25,14 @@ void epd_display(struct date_time _time, uint16_t battery_mv, int16_t temperatur
 void epd_display_time_with_date(struct date_time _time, uint16_t battery_mv, int16_t temperature, uint8_t full_or_partial);
 void epd_display_info(struct date_time _time, uint16_t battery_mv, int16_t temperature, uint8_t full_or_partial);
 void epd_display_my(struct date_time _time, uint16_t battery_mv, int16_t temperature, uint8_t full_or_partial);
+void epd_myScene(struct date_time _time, uint16_t battery_mv, int16_t temperature, uint8_t full_or_partial);
+void drawTempGraph(OBDISP *pOBD, struct date_time _time, int16_t temperature, int tgr_x, int tgr_y, bool draw_placeholder);
+uint8_t scaleTemp(uint8_t temp, uint8_t max, uint8_t min, uint8_t height);
+void drawClock(OBDISP *pOBD, struct date_time _time, int cl_x, int cl_y);
+void drawMAC(OBDISP *pOBD, int mac_x, int mac_y);
+void drawBattery(OBDISP *pOBD, uint16_t battery_mv, int bat_x, int bat_y, bool vertical);
+void drawCalendar(OBDISP *pOBD, struct date_time _time, int cal_x, int cal_y, bool draw_placeholder); 
 
-void drawCalendar(struct date_time _time, uint16_t battery_mv, int16_t temperature, uint8_t full_or_partial);
 int calculateDayOfWeek(struct date_time date);
 int getDaysInMonth(int month, int year);
+int isHoliday(struct date_time date, char **holiday_name);

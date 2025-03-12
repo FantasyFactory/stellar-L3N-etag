@@ -1,3 +1,4 @@
+#include "corrado.h"
 #include <stdint.h>
 #include "tl_common.h"
 #include "app.h"
@@ -21,14 +22,25 @@ RAM int16_t temperature;
 // Settings
 extern settings_struct settings;
 
+#if defined EXP_UART
+RAM uint16_t gUART_RX_Counter = 0;
+_attribute_ram_code_ void inc_UART_RX_Counter(int r)
+{
+    gUART_RX_Counter += r;
+}
+#endif
+
 _attribute_ram_code_ void user_init_normal(void)
 {                            // this will get executed one time after power up
     random_generator_init(); // must
     init_time();
-    init_ble();
-    init_flash();
-    init_nfc();
+#if defined EXP_UART
 
+#else
+    init_ble();
+    init_nfc();
+#endif
+    init_flash();
     // epd_display_tiff((uint8_t *)bart_tif, sizeof(bart_tif));
     // epd_display(3334533);
 }
@@ -59,7 +71,7 @@ _attribute_ram_code_ void main_loop(void)
         set_air_tag_adv_data();
     }
 
-    epd_update(get_time(), battery_mv, temperature);
+    epd_update(get_time(), battery_mv, temperature); //RECE
 
     if (time_reached_period(Timer_CH_0, 10))
     {

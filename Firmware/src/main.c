@@ -1,3 +1,4 @@
+#include "corrado.h"
 #include <stdint.h>
 #include "tl_common.h"
 #include "drivers.h"
@@ -18,10 +19,46 @@
 #include "ota.h"
 #include "uart.h"
 
+#if defined EXP_UART
+RAM unsigned char uart_dma_irqsrc;
+
+_attribute_ram_code_ void irq_handler(void)
+{
+    //gpio_toggle(LED_RED);
+    
+    //irq_blt_sdk_handler();
+	
+    uart_dma_irqsrc = dma_chn_irq_status_get();
+	
+    if (uart_dma_irqsrc & FLD_DMA_CHN_UART_RX) {
+        dma_chn_irq_status_clr(FLD_DMA_CHN_UART_RX);
+       
+        inc_UART_RX_Counter(nhandle_uart_rx(&uart_rx_buff));
+        
+        //sleep_us(100);
+        //printf("[irq_handler] Received %u bytes\n", uart_rx_buff.dma_len);
+        
+        //printf("v%d:NICKT: UART RX. \r\n", NICKT_VERSION);
+    }
+    
+    if (uart_dma_irqsrc & FLD_DMA_CHN_UART_TX) {
+        //gpio_toggle(LED_GREEN);
+        dma_chn_irq_status_clr(FLD_DMA_CHN_UART_TX);
+        //sleep_us(75);
+        while(uart_tx_is_busy()) { 
+          sleep_us(100);
+        }
+        //gpio_toggle(LED_GREEN);
+    }
+    
+    //gpio_toggle(LED_RED);
+}
+#else
 _attribute_ram_code_ __attribute__((optimize("-Os"))) void irq_handler(void)
 {
 	irq_blt_sdk_handler();
 }
+#endif
 
 _attribute_ram_code_ int main (void)    //must run in ramcode
 {
@@ -43,7 +80,7 @@ _attribute_ram_code_ int main (void)    //must run in ramcode
 		
 	if( deepRetWakeUp ){
 		user_init_deepRetn ();
-		printf("\r\n\r\n\r\nBooting\r\n\r\n\r\n\r\n");
+		printf("\r\n\r\n\r\nBooting deep\r\n\r\n\r\n\r\n");
 	}
 	else{
 		printf("\r\n\r\n\r\nBooting\r\n\r\n\r\n\r\n");

@@ -44,10 +44,25 @@ TIFFIMAGE tiff;
 
 // Temperature hystory (every 15 minutes)
 // 96 values for 24 hours
+//
 //                        00:00        01:00        02:00        03:00        04:00        05:00        06:00        07:00        08:00        09:00        10:00        11:00        12:00        13:00        14:00        15:00        16:00        17:00        18:00        19:00        20:00        21:00        22:00        23:00
+/*
 RAM uint8_t min_temp[96]={17,17,17,17, 16,16,16,16, 15,15,15,15, 15,15,15,15, 15,15,15,15, 15,15,15,15, 16,16,16,16, 17,17,18,18, 18,18,17,17, 17,17,16,16, 15,15,15,15, 15,15,15,15, 16,17,18,18, 18,18,18,18, 17,17,17,17, 17,17,17,17, 17,17,17,17, 17,17,17,17, 17,17,17,17, 17,17,18,18, 18,18,18,18, 18,18,18,18, 18,18,18,18, 18,18,17,17};
 RAM uint8_t max_temp[96]={21,20,20,19, 19,19,18,18, 17,17,17,17, 17,17,17,17, 17,17,17,17, 17,17,17,17, 17,18,18,18, 19,20,20,21, 21,21,20,20, 20,20,20,20, 19,19,19,19, 19,19,19,19, 19,20,21,21, 22,22,23,23, 22,22,22,22, 21,21,21,21, 21,21,21,21, 21,21,21,21, 21,21,21,21, 21,21,22,22, 22,22,23,23, 23,23,22,22, 22,22,21,21, 21,21,21,21};
 RAM uint8_t day_temp[96]={127,127,127,127, 127,127,127,127, 127,127,127,127, 127,127,127,127, 127,127,127,127, 127,127,127,127, 127,127,127,127, 127,127,127,127, 127,127,127,127, 127,127,127,127, 127,127,127,127, 127,127,127,127, 127,127,127,127, 127,127,127,127, 127,127,127,127, 127,127,127,127, 127,127,127,127, 127,127,127,127, 127,127,127,127, 127,127,127,127, 127,127,127,127, 127,127,127,127, 127,127,127,127, 127,127,127,127};
+*/
+RAM uint8_t min_temp[96]={255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255};
+RAM uint8_t max_temp[96]={00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00};
+RAM uint8_t day_temp[96]={255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255};
+/*
+RAM uint8_t min_temp[96]={00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00};
+RAM uint8_t max_temp[96]={39,39,39,39, 39,39,39,39, 39,39,39,39, 39,39,39,39, 39,39,39,39, 39,39,39,39, 39,39,39,39, 39,39,39,39, 39,39,39,39, 39,39,39,39, 39,39,39,39, 39,39,39,39, 39,39,39,39, 39,39,39,39, 39,39,39,39, 39,39,39,39, 39,39,39,39, 39,39,39,39, 39,39,39,39, 39,39,39,39, 39,39,39,39, 39,39,39,39, 39,39,39,39, 39,39,39,39};
+
+RAM uint8_t day_temp[96]={17,17,17,17, 16,16,16,16, 15,15,15,15, 15,15,15,15, 15,15,15,15, 15,15,15,15, 16,16,16,16, 17,17,18,18, 18,18,17,17, 17,17,16,16, 15,15,15,15, 15,15,15,15, 16,17,18,18, 18,18,18,18, 17,17,17,17, 17,17,17,17, 17,17,17,17, 17,17,17,17, 17,17,17,17, 17,17,18,18, 18,18,18,18, 18,18,18,18, 18,18,18,18, 18,18,17,17};
+*/
+
+
+RAM uint16_t myTemp=0;
 
 // With this we can force a display if it wasnt detected correctly
 void set_EPD_model(uint8_t model_nr)
@@ -131,8 +146,13 @@ _attribute_ram_code_ uint8_t EPD_read_temp(void)
         epd_temperature = EPD_BWR_213_read_temp();
 //    else if (epd_model == 3)
 //        epd_temperature = EPD_BWR_154_read_temp();
-    else if (epd_model == 4 || epd_model == 5)
+    else if (epd_model == 4)
         epd_temperature = EPD_BW_213_ice_read_temp();
+    else if (epd_model == 5)
+        epd_temperature = EPD_BW_213_ice_read_temp();
+        //epd_temperature = EPD_BWR_296_read_temp();
+
+    myTemp = EPD_BWR_296_read_temp();
 
     EPD_POWER_OFF();
 
@@ -167,6 +187,8 @@ _attribute_ram_code_ void EPD_Display(unsigned char *image, unsigned char *red_i
     else if (epd_model == 5)
         epd_temperature = EPD_BWR_296_Display_BWR(image, red_image, size, full_or_partial);
         //epd_temperature = EPD_BWR_296_Display(image, size, full_or_partial);
+
+    //myTemp = myEPD_BWR_296_read_temp();
 
     epd_temperature_is_read = 1;
     epd_update_state = 1;
@@ -375,10 +397,10 @@ void update_time_scene(struct date_time _time, uint16_t battery_mv, int16_t temp
 void epd_update(struct date_time _time, uint16_t battery_mv, int16_t temperature) {
 
     int temp_idx=_time.tm_hour*4+_time.tm_min/15;
-    uint8_t t=EPD_read_temp();
-    if (min_temp[temp_idx] > t) min_temp[temp_idx] = t;
-    if (max_temp[temp_idx] < t) max_temp[temp_idx] = t;
-    day_temp[temp_idx] = t;
+    uint8_t epd_temp=EPD_read_temp();
+    if (min_temp[temp_idx] > epd_temp) min_temp[temp_idx] = epd_temp;
+    if (max_temp[temp_idx] < epd_temp) max_temp[temp_idx] = epd_temp;
+    day_temp[temp_idx] = epd_temp;
 
     switch(epd_scene) {
         case 1:
@@ -394,7 +416,7 @@ void epd_update(struct date_time _time, uint16_t battery_mv, int16_t temperature
             update_time_scene(_time, battery_mv, temperature, epd_display_info);
             break;
         case 5:
-            update_time_scene(_time, battery_mv, temperature, drawCalendar);
+            update_time_scene(_time, battery_mv, temperature, epd_myScene);
             break;
         default:
             break;
@@ -597,43 +619,167 @@ void epd_display_my(struct date_time _time, uint16_t battery_mv, int16_t tempera
     EPD_Display(epd_buffer, NULL, epd_width * epd_height / 8, full_or_partial);
 }
 
-
-void drawCalendar(struct date_time _time, uint16_t battery_mv, int16_t temperature, uint8_t full_or_partial) {
-    const char *months[] = {"Gen", "Feb", "Mar", "Apr", "Mag", "Giu",
-                           "Lug", "Ago", "Set", "Ott", "Nov", "Dic"};
-    const char *weekdays[] = {"L", "M", "M", "G", "V", "S", "D"};
-    char buffer[32];
-
-    const int cal_x=48;
-    const int cal_y=16;
-    const int cell_width = 14;  // larghezza di ogni cella
-    const int cell_height = 10; // altezza di ogni cella
-    const int clk_x=150;
-    const int clk_y=40;
-    const int tgr_x=194;
-    const int tgr_y=96;
+void epd_myScene(struct date_time _time, uint16_t battery_mv, int16_t temperature, uint8_t full_or_partial) {
 
     epd_clear();
 
     obdCreateVirtualDisplay(&obd, epd_width, epd_height, epd_temp);
     obdFill(&obd, 0, 0); // fill with white
 
-        
-    // Disegna un rettangolo attorno al calendario
-    obdRectangle(&obd, 
-                cal_x , cal_y +4,  // angolo superiore sinistro
-                cal_x + (7 * cell_width), cal_y + (6 * cell_height) +4, // angolo inferiore destro
-                1, 0); // colore nero, non riempito
-              
+    // Calendario
+    drawCalendar(&obd, _time, 47, 0, false);
+
+    // Orologio
+    drawClock(&obd, _time, 148, 1);
+ 
+    //Grafico temperatura
+    drawTempGraph(&obd, _time, temperature, 148, 43, false);
+
+    // MAC address
+    drawMAC(&obd, 48, 107);
+
+    // battery level
+    drawBattery(&obd, battery_mv, 252, 107, false);
+    //drawBattery(&obd, battery_mv, 285, 1, true);
+
+    FixBuffer(epd_temp, epd_buffer, epd_width, epd_height);
+
+    EPD_Display(epd_buffer, NULL, epd_width * epd_height / 8, full_or_partial);             
+
+}
+
+void drawTempGraph(OBDISP *pOBD, struct date_time _time, int16_t temperature, int tgr_x, int tgr_y, bool draw_placeholder)  {
+    uint8_t day_min=99;
+    uint8_t day_max=0;
+    uint8_t graph_height=48;
+    uint8_t graph_width=96;
+    uint8_t grx_offset=tgr_x+51;
+    uint8_t tempY;
+    char buffer[40];
+
+    obdRectangle(pOBD, 
+        tgr_x , tgr_y,  // angolo superiore sinistro + altezza intestazione
+        grx_offset + graph_width +1, tgr_y + graph_height +8, // angolo inferiore destro + altezza inte + 4 di mergine
+        1, 0); // colore nero, non riempito
+    obdRectangle(pOBD, 
+        grx_offset-1, tgr_y,  // angolo superiore sinistro + altezza intestazione
+        grx_offset + graph_width, tgr_y + graph_height +1, // angolo inferiore destro + altezza inte + 4 di mergine
+        1, 0); // colore nero, non riempito
+    if(draw_placeholder) return;
+
+    // Calcola i valori massimi e minimi del grafico
+    for(int tx = 0; tx < 96; tx++) {
+        if((min_temp[tx]!=255) && (min_temp[tx] < day_min)) day_min = min_temp[tx];
+        if((max_temp[tx]!=0) && (max_temp[tx] > day_max)) day_max = max_temp[tx];
+    }
+
+    int temp_idx=_time.tm_hour*4+_time.tm_min/15; // indice nel grafico della temperatura: 96 byte, uno ogni 15 minuti
+    //se i valori minimi e massimi del grafico sono troppo vicini alla temperatura attuale, allora li allargo di 3 gradi
+    if((day_temp[temp_idx]-day_min) < 3) day_min=day_temp[temp_idx]-3;
+    if((day_max-day_temp[temp_idx]) < 3) day_max=day_temp[temp_idx]+3;
+
+    sprintf(buffer, "%d", day_temp[temp_idx]);  // Temperatura al momento
+    obdWriteStringCustom(pOBD, (GFXfont *)&Special_Elite_Regular_30, tgr_x, tgr_y +24, (char *)buffer, 1);
+    obdScaledString(pOBD, tgr_x+34, tgr_y+2, "o", FONT_8x8, 0, 256, 256, 0);
+
+    sprintf(buffer, "G:%d-%d", day_min, day_max); // Minima e massima del grafico
+    obdScaledString(pOBD, tgr_x+1, tgr_y+32, (char *)buffer, FONT_6x8, 0, 256, 256, 0);
+    sprintf(buffer, "H:%d-%d", min_temp[temp_idx], min_temp[temp_idx]); // Minima e massima nella stessa ora
+    obdScaledString(pOBD, tgr_x+1, tgr_y+41, (char *)buffer, FONT_6x8, 0, 256, 256, 0);
+
+    for(int ty = day_min; ty <= day_max; ty+=2) {
+        obdDrawLine(pOBD, grx_offset -3, tgr_y + graph_height - scaleTemp(ty,day_max,day_min,graph_height), grx_offset -1, tgr_y + graph_height - scaleTemp(ty,day_max,day_min,graph_height), 1, 0);
+    }
+    obdDrawLine(pOBD, grx_offset + temp_idx, tgr_y + graph_height, grx_offset + temp_idx, tgr_y + graph_height +2, 1, 0);
+
+    for(int tx = 0; tx < graph_width; tx++) {
+        if(max_temp[tx]==0 || min_temp[tx]==255) {
+            int min_y=scaleTemp(min_temp[tx],day_max,day_min,graph_height);
+            int max_y=scaleTemp(max_temp[tx],day_max,day_min,graph_height);
+            for(int ty = min_y; ty <= max_y; ty++) {
+                if((tx%2==0 && ty%2==0) || (tx%2==1 && ty%2==1)) { // solo se x e y sono pari o x e y sono dispari, in modo da fare un reticolo
+                    obdSetPixel(pOBD, grx_offset + tx, tgr_y + graph_height - ty , 1, 0);
+                }
+            }
+        }
+        if(day_temp[tx]!=255)
+            obdSetPixel(pOBD, grx_offset +tx, tgr_y + graph_height - scaleTemp(day_temp[tx],day_max,day_min,graph_height), 1, 0);
+    }
+    
+    sprintf(buffer, "T: (%u,%u) idx=%d=%d (%u,%u)", (temperature >> 8) & 0xFF, temperature & 0xFF, temp_idx,  day_temp[temp_idx], (myTemp >> 8) & 0xFF, myTemp & 0xFF);
+    obdScaledString(pOBD, 48, 97, (char *)buffer, FONT_8x8, 0, 256, 256, 0);
+
+}
+
+uint8_t scaleTemp(uint8_t temp, uint8_t max, uint8_t min, uint8_t height) {
+    return ((height/(max-min))*(temp-min));
+}
+
+void drawLabel(OBDISP *pOBD, char *text, int x, int y)  
+{
+    obdScaledString(pOBD, x, y, text, FONT_8x8, 0, 256, 256, 0);
+}
+
+void drawClock(OBDISP *pOBD, struct date_time _time, int cl_x, int cl_y) {
+    char buffer[32];
+    sprintf(buffer, "%02d:%02d", _time.tm_hour, _time.tm_min);
+    obdWriteStringCustom(&obd, (GFXfont *)&DSEG14_Classic_Mini_Regular_40, cl_x, cl_y+39, (char *)buffer, 1);
+}
+
+void drawMAC(OBDISP *pOBD, int mac_x, int mac_y) {
+    char buffer[32];
+    sprintf(buffer, "S24_%02X%02X%02X", mac_public[2], mac_public[1], mac_public[0]);
+    obdScaledString(pOBD, mac_x, mac_y +6, (char *)buffer, FONT_8x8, 0, 256, 256, 0);
+}
+
+void drawBattery(OBDISP *pOBD, uint16_t battery_mv, int bat_x, int bat_y, bool vertical) {   
+    char buffer[32];
+    uint16_t battery_level;
+    battery_level = get_battery_level(battery_mv);
+    sprintf(buffer, "%d%%", battery_level);
+    if(vertical) {
+        obdRectangle(pOBD, bat_x+5, bat_y, bat_x +7, bat_y +2, 1, 1);
+        obdRectangle(pOBD, bat_x, bat_y+3, bat_x + 10, bat_y +40, 1, 1);
+        obdScaledString(pOBD, bat_x +9, bat_y +7, (char *)buffer, FONT_8x8, 1, 256, 256, ROT_90);
+    } else {
+        obdRectangle(pOBD, bat_x, bat_y+4, bat_x +2, bat_y +8, 1, 1);
+        obdRectangle(pOBD, bat_x +3, bat_y, bat_x + 40, bat_y +12, 1, 1);
+        obdScaledString(pOBD, bat_x +7, bat_y +3, (char *)buffer, FONT_8x8, 1, 256, 256, ROT_0);
+    }
+}
+
+void drawCalendar(OBDISP *pOBD, struct date_time _time, int cal_x, int cal_y, bool draw_placeholder) {
+    const char *months[] = {"Gen", "Feb", "Mar", "Apr", "Mag", "Giu",
+                           "Lug", "Ago", "Set", "Ott", "Nov", "Dic"};
+    const char *weekdays[] = {"L", "M", "M", "G", "V", "S", "D"};
+    char buffer[32];
+    const int cell_width = 14;  // larghezza di ogni cella
+    const int cell_height = 10; // altezza di ogni cella
+
+    obdRectangle(pOBD, 
+        cal_x , cal_y,  // angolo superiore sinistro + altezza intestazione
+        cal_x + (7 * cell_width), cal_y + (6 * cell_height) +32, // angolo inferiore destro + altezza inte + 4 di mergine
+        1, 0); // colore nero, non riempito
+    if(draw_placeholder) return;
+
+    cal_y +=16; // sposta y più in basso dell'altezza del font perché li disegna dal basso
+
     // Stampa mese e anno nella parte superiore
     sprintf(buffer, "%s %d", months[_time.tm_month - 1], _time.tm_year);
-    obdWriteStringCustom(&obd, (GFXfont *)&Dialog_plain_16, cal_x, cal_y, buffer, 1);
+    obdWriteStringCustom(pOBD, (GFXfont *)&Dialog_plain_16, cal_x+10, cal_y, buffer, 1);
 
+    cal_y +=2; // sposta y più in basso per separare il calendario dalla data
 
+    // Disegna un rettangolo attorno al calendario
+    obdRectangle(pOBD, 
+                cal_x , cal_y,  // angolo superiore sinistro + altezza intestazione
+                cal_x + (7 * cell_width), cal_y + (6 * cell_height) +2, // angolo inferiore destro + aaltezza inte + 4 di mergine
+                1, 0); // colore nero, non riempito
+              
     // Disegna i giorni della settimana (intestazione)
     for(int i = 0; i < 7; i++) {
-        obdScaledString(&obd, cal_x + 3 + (i * cell_width), cal_y + 6, (char*)weekdays[i], FONT_8x8, 0, 256, 256, 0);
-        obdDrawLine(&obd, cal_x + (i * cell_width) , cal_y+4, cal_x + (i * cell_width), cal_y + (6 * cell_height) +4, 1, 0);
+        obdScaledString(pOBD, cal_x + 3 + (i * cell_width), cal_y + 3, (char*)weekdays[i], FONT_8x8, 0, 256, 256, 0);
+        obdDrawLine(pOBD, cal_x + (i * cell_width) , cal_y+1, cal_x + (i * cell_width), cal_y + (6 * cell_height) +2, 1, 0);
     }
     
     // Calcola il giorno della settimana del primo giorno del mese
@@ -644,6 +790,13 @@ void drawCalendar(struct date_time _time, uint16_t battery_mv, int16_t temperatu
     
     int day = 1;
     int max_days = getDaysInMonth(_time.tm_month, _time.tm_year); // dovrai implementare questa funzione
+
+    struct date_time check_date = _time;
+    char *holiday_name = NULL;
+    int is_holiday = isHoliday(_time, &holiday_name);
+    if(is_holiday) {
+        obdScaledString(pOBD, cal_x+1, cal_y + 5 + (6 * cell_height), holiday_name, FONT_6x8, 0, 256, 256, 0);
+    }
     
     // Disegna la griglia dei giorni
     for(int row = 0; row < 5; row++) {
@@ -651,66 +804,15 @@ void drawCalendar(struct date_time _time, uint16_t battery_mv, int16_t temperatu
             int current_pos = row * 7 + col;
             if(current_pos >= first_day && day <= max_days) {
                 sprintf(buffer, "%2d", day);
-                /*struct date_time check_date = _time;
-                check_date.tm_day = day;
-                char *holiday_name = NULL;
-                int is_holiday = isHoliday(check_date, &holiday_name);
-                // Inverte il colore per il giorno corrente
-                */
                 int is_current = (day == _time.tm_day);
                 // Usa il colore appropriato (rosso per festivi)
-                uint8_t text_color = 1; //is_holiday ? 2 : 1;  // 2 = rosso, 1 = nero
-                obdScaledString(&obd, cal_x + (col * cell_width) +1 + is_current, cal_y + 16 + (row * cell_height) - is_current, buffer, FONT_6x8, is_current, 256, 256, 0);
+                uint8_t text_color = is_holiday ? 2 : 1;  // 2 = rosso, 1 = nero
+                obdScaledString(pOBD, cal_x + (col * cell_width) +1, cal_y + 14 + (row * cell_height), buffer, FONT_6x8, is_current, 256, 256, 0);
                 day++;
             }
         }
-        obdDrawLine(&obd, cal_x, cal_y+14+(row * cell_height), cal_x+ (7 * cell_width), cal_y+14+(row * cell_height), 1, 0);
+        obdDrawLine(pOBD, cal_x, cal_y+12+(row * cell_height), cal_x+ (7 * cell_width), cal_y+12+(row * cell_height), 1, 0);
     }
-    struct date_time check_date = _time;
-    char *holiday_name = NULL;
-    int is_holiday = isHoliday(_time, &holiday_name);
-    if(is_holiday) {
-        obdScaledString(&obd, cal_x, cal_y + 18 + (5 * cell_height), holiday_name, FONT_6x8, 0, 256, 256, 0);
-    }
-
-    // Orologio
-    sprintf(buffer, "%02d:%02d", _time.tm_hour, _time.tm_min);
-    obdWriteStringCustom(&obd, (GFXfont *)&DSEG14_Classic_Mini_Regular_40, clk_x, clk_y, (char *)buffer, 1);
-
-    //Grafico temperatura
-    uint8_t day_min=99;
-    uint8_t day_max=0;
-    for(int tx = 0; tx < 96; tx++) {
-        if(min_temp[tx] < day_min) day_min = min_temp[tx];
-        if(max_temp[tx] > day_max) day_max = max_temp[tx];
-        for(int ty = min_temp[tx]*2; ty <= max_temp[tx]*2; ty+=2) {
-            obdSetPixel(&obd, tgr_x + tx, tgr_y - ty +(tx%2) , 1, 0);
-        }
-        if(day_temp[tx]!=127) obdSetPixel(&obd, tgr_x +tx, tgr_y - (day_temp[tx]*2) -1 +(tx%2), 1, 0);
-    }
-    sprintf(buffer, "%d", EPD_read_temp());
-    obdWriteStringCustom(&obd, (GFXfont *)&Special_Elite_Regular_30, clk_x, tgr_y - 28, (char *)buffer, 1);
-
-    int temp_idx=_time.tm_hour*4+_time.tm_min/15;
-    sprintf(buffer, "day: da %d a %d", day_min, day_max);
-    obdWriteStringCustom(&obd, (GFXfont *)&Dialog_plain_16, clk_x, tgr_y-6, (char *)buffer, 1);
-    sprintf(buffer, "ora: da %d a %d", min_temp[temp_idx], min_temp[temp_idx]);
-    obdWriteStringCustom(&obd, (GFXfont *)&Dialog_plain_16, clk_x, tgr_y+8, (char *)buffer, 1);
-
-    sprintf(buffer, "S24_%02X%02X%02X", mac_public[2], mac_public[1], mac_public[0]);
-    obdWriteStringCustom(&obd, (GFXfont *)&Dialog_plain_16, 48, 116, (char *)buffer, 1);
-    
-    uint16_t battery_level;
-    battery_level = get_battery_level(battery_mv);
-    obdRectangle(&obd, 252, 113, 255, 115, 1, 1);
-    obdRectangle(&obd, 255, 105, 295, 125, 1, 1);
-    sprintf(buffer, "%d", battery_level);
-    obdWriteStringCustom(&obd, (GFXfont *)&Dialog_plain_16, 259, 123, (char *)buffer, 0);
-    //obdRectangle(&obd, 0, 116, 295, 127, 1, 1);
-
-    FixBuffer(epd_temp, epd_buffer, epd_width, epd_height);
-
-    EPD_Display(epd_buffer, NULL, epd_width * epd_height / 8, full_or_partial);             
 }
 
 int calculateDayOfWeek(struct date_time date) {
