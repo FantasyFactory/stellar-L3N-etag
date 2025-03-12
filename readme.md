@@ -11,7 +11,7 @@
   - command 0xe1 04 Uguale alla scena 2 ma tradotto
   - command 0xe1 05 NUOVA SCENA
 - 3. Nuova scena:
-![Modalità orologio 5, calendario ](/images/PXL_20250122_003022747-EDIT.jpg)
+![Modalità orologio 5, calendario ](/images/actual.jpg)
   - Visualizza mese, anno, calendario (il giorno attuale è invertito)
   - Visualizza l'ora e il minuto
   - Visualizza la temperatura attuale

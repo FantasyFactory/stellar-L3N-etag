@@ -674,6 +674,9 @@ void drawTempGraph(OBDISP *pOBD, struct date_time _time, int16_t temperature, in
     }
 
     int temp_idx=_time.tm_hour*4+_time.tm_min/15; // indice nel grafico della temperatura: 96 byte, uno ogni 15 minuti
+    //se i valori minimi e massimi del grafico sono troppo vicini alla temperatura attuale, allora li allargo di 3 gradi
+    if((day_temp[temp_idx]-day_min) < 3) day_min=day_temp[temp_idx]-3;
+    if((day_max-day_temp[temp_idx]) < 3) day_max=day_temp[temp_idx]+3;
 
     sprintf(buffer, "%d", day_temp[temp_idx]);  // Temperatura al momento
     obdWriteStringCustom(pOBD, (GFXfont *)&Special_Elite_Regular_30, tgr_x, tgr_y +24, (char *)buffer, 1);
@@ -690,7 +693,7 @@ void drawTempGraph(OBDISP *pOBD, struct date_time _time, int16_t temperature, in
     obdDrawLine(pOBD, grx_offset + temp_idx, tgr_y + graph_height, grx_offset + temp_idx, tgr_y + graph_height +2, 1, 0);
 
     for(int tx = 0; tx < graph_width; tx++) {
-        if(max_temp[tx]==0 && min_temp[tx]==255) {
+        if(max_temp[tx]==0 || min_temp[tx]==255) {
             int min_y=scaleTemp(min_temp[tx],day_max,day_min,graph_height);
             int max_y=scaleTemp(max_temp[tx],day_max,day_min,graph_height);
             for(int ty = min_y; ty <= max_y; ty++) {
@@ -702,7 +705,6 @@ void drawTempGraph(OBDISP *pOBD, struct date_time _time, int16_t temperature, in
         if(day_temp[tx]!=255)
             obdSetPixel(pOBD, grx_offset +tx, tgr_y + graph_height - scaleTemp(day_temp[tx],day_max,day_min,graph_height), 1, 0);
     }
-
     
     sprintf(buffer, "T: (%u,%u) idx=%d=%d (%u,%u)", (temperature >> 8) & 0xFF, temperature & 0xFF, temp_idx,  day_temp[temp_idx], (myTemp >> 8) & 0xFF, myTemp & 0xFF);
     obdScaledString(pOBD, 48, 97, (char *)buffer, FONT_8x8, 0, 256, 256, 0);
