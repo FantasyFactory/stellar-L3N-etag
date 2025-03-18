@@ -204,7 +204,16 @@
 			}
 			else {
 				reconnectTrys = 0;
-				bleDevice = await navigator.bluetooth.requestDevice({ optionalServices: ['0000221f-0000-1000-8000-00805f9b34fb', '00001f10-0000-1000-8000-00805f9b34fb', '13187b10-eba9-a3ba-044e-83d3217d9a38'], acceptAllDevices: true });
+				bleDevice = await navigator.bluetooth.requestDevice({ 
+					optionalServices: [
+						'0000221f-0000-1000-8000-00805f9b34fb', // Servizio OTA
+						'00001f10-0000-1000-8000-00805f9b34fb', // Servizio RxTx
+						'13187b10-eba9-a3ba-044e-83d3217d9a38', // Servizio EPD_BLE
+						'0000181a-0000-1000-8000-00805f9b34fb',  // Servizio Temperatura
+						'0000180f-0000-1000-8000-00805f9b34fb'  // Servizio Batteria
+					], 
+					acceptAllDevices: true 
+				});
 				await bleDevice.addEventListener('gattserverdisconnected', disconnect);
 				try {
 					await connect();
@@ -490,6 +499,152 @@
 				}
 			}
 		}
+
+		async function getTemperature() {
+			if (!gattServer || !gattServer.connected) {
+				addLog('Dispositivo non connesso. Impossibile leggere la temperatura.');
+				return;
+			}
+			
+			try {
+				// UUIDs del servizio e della caratteristica temperatura (direttamente dal firmware)
+				const tempServiceUUID = '0000181a-0000-1000-8000-00805f9b34fb';
+				const tempCharUUID = '00002a1f-0000-1000-8000-00805f9b34fb';
+				
+				addLog('> Accesso diretto al servizio temperatura: ' + tempServiceUUID);
+				
+				// Accesso diretto al servizio e alla caratteristica temperatura
+				const tempService = await gattServer.getPrimaryService(tempServiceUUID);
+				addLog('> Servizio temperatura trovato!');
+				
+				const tempCharacteristic = await tempService.getCharacteristic(tempCharUUID);
+				addLog('> Caratteristica temperatura trovata!');
+				
+				// Leggi il valore
+				const tempValue = await tempCharacteristic.readValue();
+				
+				// Converti i bytes in un valore di temperatura esattamente come in Python
+				// Nota: in JavaScript DataView.getUint16(0, true) è l'equivalente di int.from_bytes(bytes, byteorder='little')
+				const tempValueInt = tempValue.getUint16(0, true);
+				const tempCelsius = tempValueInt / 10;
+				
+				addLog(`Temperatura attuale: ${tempCelsius.toFixed(1)}°C`);
+				
+			} catch (error) {
+				addLog(`Errore nella lettura della temperatura: ${error}`);
+				console.error(error);
+				
+				// Fallback: prova a scoprire quali servizi e caratteristiche sono disponibili
+				try {
+					addLog('> Tentativo di scoperta dei servizi disponibili...');
+					const services = await gattServer.getPrimaryServices();
+					addLog(`> Trovati ${services.length} servizi:`);
+					
+					for (const service of services) {
+						addLog(`> Servizio: ${service.uuid}`);
+						try {
+							const characteristics = await service.getCharacteristics();
+							for (const characteristic of characteristics) {
+								addLog(`>   Caratteristica: ${characteristic.uuid}`);
+							}
+						} catch (e) {
+							addLog(`>   Errore nell'enumerazione delle caratteristiche: ${e}`);
+						}
+					}
+				} catch (discoveryError) {
+					addLog(`> Errore nella scoperta dei servizi: ${discoveryError}`);
+				}
+			}
+		}
+		async function getBattery() {
+			if (!gattServer || !gattServer.connected) {
+				addLog('Dispositivo non connesso. Impossibile leggere il livello della batteria.');
+				return;
+			}
+			
+			try {
+				// UUIDs del servizio e della caratteristica batteria (direttamente dal firmware)
+				const battServiceUUID = '0000180f-0000-1000-8000-00805f9b34fb';
+				const battCharUUID = '00002a19-0000-1000-8000-00805f9b34fb';
+				
+				addLog('> Accesso diretto al servizio batteria: ' + battServiceUUID);
+				
+				// Accesso diretto al servizio e alla caratteristica batteria
+				const battService = await gattServer.getPrimaryService(battServiceUUID);
+				addLog('> Servizio batteria trovato!');
+				
+				const battCharacteristic = await battService.getCharacteristic(battCharUUID);
+				addLog('> Caratteristica batteria trovata!');
+				
+				// Leggi il valore
+				const battValue = await battCharacteristic.readValue();
+				
+				// Il valore della batteria è direttamente la percentuale (un solo byte)
+				const batteryPercentage = battValue.getUint8(0);
+				
+				addLog(`Livello batteria attuale: ${batteryPercentage}%`);
+				
+			} catch (error) {
+				addLog(`Errore nella lettura della batteria: ${error}`);
+				console.error(error);
+				
+				// Fallback: prova a scoprire quali servizi e caratteristiche sono disponibili
+				try {
+					addLog('> Tentativo di scoperta dei servizi disponibili...');
+					const services = await gattServer.getPrimaryServices();
+					addLog(`> Trovati ${services.length} servizi:`);
+					
+					for (const service of services) {
+						addLog(`> Servizio: ${service.uuid}`);
+						try {
+							const characteristics = await service.getCharacteristics();
+							for (const characteristic of characteristics) {
+								addLog(`>   Caratteristica: ${characteristic.uuid}`);
+							}
+						} catch (e) {
+							addLog(`>   Errore nell'enumerazione delle caratteristiche: ${e}`);
+						}
+					}
+				} catch (discoveryError) {
+					addLog(`> Errore nella scoperta dei servizi: ${discoveryError}`);
+				}
+			}
+		}
+		async function discoverServices() {
+			if (!gattServer || !gattServer.connected) {
+				addLog('Dispositivo non connesso.');
+				return;
+			}
+			
+			try {
+				// Ottieni tutti i servizi disponibili
+				const services = await gattServer.getPrimaryServices();
+				addLog(`Trovati ${services.length} servizi:`);
+				
+				// Per ogni servizio, ottieni le caratteristiche
+				for (const service of services) {
+					addLog(`\nServizio UUID: ${service.uuid}`);
+					try {
+						const characteristics = await service.getCharacteristics();
+						addLog(`  Trovate ${characteristics.length} caratteristiche:`);
+						
+						for (const characteristic of characteristics) {
+							addLog(`  - Caratteristica UUID: ${characteristic.uuid}`);
+							
+							// Verifica se è la caratteristica della temperatura che ci interessa
+							if (characteristic.uuid.toLowerCase() === '00002a1f-0000-1000-8000-00805f9b34fb'.toLowerCase()) {
+								addLog(`    TROVATA CARATTERISTICA TEMPERATURA!`);
+							}
+						}
+					} catch (error) {
+						addLog(`  Errore nell'ottenere le caratteristiche: ${error}`);
+					}
+				}
+			} catch (error) {
+				addLog(`Errore nella scoperta dei servizi: ${error}`);
+				console.error(error);
+			}
+		}
 	</script>
 	<h2>Electronic price tag bluetooth controller<a style="margin-left: 130px;" href="uart_flasher.html">Serial port upgrade</a><a href="ATC_TLSR_PaperBLEcontrol.html">Bluetooth OTA upgrade</a>
 	</h2>
@@ -589,6 +744,12 @@
 	<button id="White" onclick="setColor(7)" style="background-color: #ffffff">White</button>	
 	<button id="Off" onclick="setColor(0)">Off</button>	
 	<br>
+	<h3>Temperatura</h3>
+	<button type="button" onclick="getTemperature()">Leggi temperatura</button>
+	<button type="button" onclick="getBattery()">Leggi batteria</button>
+	<button type="button" onclick="discoverServices()">Elenca servizi e caratteristiche</button>
+	<br>
+	
 
 	<div id="tab_image">
 		<br>
