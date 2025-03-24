@@ -237,6 +237,26 @@ _attribute_ram_code_ uint16_t EPD_BWR_296_read_temp(void)
     //return epd_temperature;
 }
 
+_attribute_ram_code_ uint8_t EPD_BWR_296_just_read_temp(void)
+{
+    uint8_t epd_temperature = 0;
+    
+    // Abilita il sensore di temperatura
+    EPD_WriteCmd(0x18);
+    EPD_WriteData(0x80);
+    
+    // Breve attesa per stabilizzazione del sensore
+    WaitMs(5);
+    
+    // Leggi il valore della temperatura
+    EPD_WriteCmd(0x1B);
+    epd_temperature = EPD_SPI_read();    
+    EPD_SPI_read();  // Secondo byte (può essere necessario nel protocollo SPI)
+    
+    return epd_temperature;
+}
+
+
 _attribute_ram_code_ uint8_t EPD_BWR_296_Display(unsigned char *image, int size, uint8_t full_or_partial) {
     uint8_t epd_temperature = 0 ;
     uint8_t epd_temperature_dec = 0 ;

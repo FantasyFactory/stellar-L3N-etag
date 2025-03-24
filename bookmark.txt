@@ -16,3 +16,4 @@ https://github.com/atc1441/ATC_MiThermometer TERMOMETRO MI https://www.youtube.c
 
 https://javabin.cn/2022/epaper.html
 
+....insane idea: https://microvium.com/
