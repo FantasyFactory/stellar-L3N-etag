@@ -13,3 +13,24 @@ https://github.com/atc1441/ATC_TLSR_Paper/tree/main the original one
 https://github.com/reece15/stellar-L3N-etag
 
 https://github.com/atc1441/ATC_MiThermometer TERMOMETRO MI https://www.youtube.com/watch?v=AD2KduDTjf8
+https://github.com/ixy05/hanshow
+https://github.com/dig2023/hanshow-stellar-M3
+
+https://github.com/mattzzw/hanshow_stellar-m3/blob/main/src/epd.c
+
+
+
+MY WEBTOOL https://fantasyfactory.github.io/stellar-L3N-etag/web_tools/
+
+MOLTO INTERESSANTE https://github.com/dustybee/HanshowESL.git
+
+boh https://github.com/mattzzw/hanshow_stellar-m3/
+
+https://github.com/rbaron/m6-reveng
+https://rbaron.net/blog/2021/07/06/Reverse-engineering-the-M6-smart-fitness-band
+
+MICROPYTHON su un TLSR8232 ?? https://github.com/davidgiven/micropython  (il nostro è un TLSR8359) https://www.youtube.com/watch?v=sv58aPvIonw
+https://wiki.telink-semi.cn/wiki/chip-series/TLSR823x-Series/
+https://wiki.telink-semi.cn/wiki/chip-series/TLSR835x-Series/
+https://wiki.telink-semi.cn/doc/ds/DS_TLSR8232-E_Datasheet%20for%20Telink%20BLE%20SoC%20TLSR8232.pdf
+https://wiki.telink-semi.cn/doc/ds/DS-TLSR8355-E_Datasheet%20for%20Telink%202.4%20GHz%20RF%20SoC%20TLSR8355.pdf
