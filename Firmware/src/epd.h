@@ -5,7 +5,35 @@
 #define epd_width 296
 #define epd_buffer_size ((epd_height/8) * epd_width)
 
-void set_EPD_model(uint8_t model_nr);
+// Struttura per definire i font disponibili
+typedef struct {
+    int width;
+    int height;
+    int size_code;  // Codice per la funzione obdScaledString
+} FontInfo;
+
+// Array di font ordinati dal più grande al più piccolo
+static const FontInfo fonts[] = {
+    {16, 16, FONT_16x16},  // Sostituisci con i tuoi define
+    {12, 16, FONT_12x16},
+    {8, 8, FONT_8x8},
+    {6, 8, FONT_6x8}
+};
+#define NUM_FONTS (sizeof(fonts) / sizeof(fonts[0]))
+
+// Struttura risultato
+typedef struct {
+    int font_idx;       // Indice font da usare
+    int num_lines;      // Numero di righe
+    int chars_per_line; // Caratteri per riga
+    int line_starts[10]; // Indici inizio di ogni riga (max 10 righe)
+    int line_lengths[10]; // Lunghezza di ogni riga
+} LayoutResult;
+
+static int find_wrap_point(const char *str, int max_chars);
+int calculate_optimal_layout(const char *text, int display_width, int display_height, LayoutResult *result);
+void draw_optimized_text(OBDISP *pOBD, const char *text, int display_x, int display_y, int display_width, int display_height, int bInvert);
+
 void set_EPD_scene(uint8_t scene);
 void set_EPD_wait_flush();
 

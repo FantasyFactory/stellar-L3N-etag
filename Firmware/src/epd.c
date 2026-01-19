@@ -640,9 +640,10 @@ void epd_myScene(struct date_time _time, uint16_t battery_mv, int16_t temperatur
     char buff[300];
     memset(buff, 0, sizeof(buff));
     smadonnator(buff);
-    obdScaledString(&obd, 47, 96, (char *)buff, FONT_6x8, 0, 256, 256, 0);
-    obdScaledString(&obd, 47, 104, (char *)buff+41, FONT_6x8, 0, 256, 256, 0);
-    obdScaledString(&obd, 47, 112, (char *)buff+82, FONT_6x8, 0, 256, 256, 0);
+    draw_optimized_text(&obd, buff, 
+                    47, 96,      // Posizione area
+                    250, 24,   // Dimensioni area
+                    0);
     //obdWriteStringCustom(&obd, (GFXfont *)&Dialog_plain_16, 10, 120, (char *)buff, 1);
 
     // MAC address
@@ -931,3 +932,135 @@ int isHoliday(struct date_time date, char **holiday_name) {
     return 0;
 }
 
+// Funzione per trovare il punto di word wrap
+static int find_wrap_point(const char *str, int max_chars) {
+    int i;
+    
+    // Se la stringa è più corta del massimo, torna la lunghezza
+    if (strlen(str) <= max_chars) {
+        return strlen(str);
+    }
+    
+    // Cerca l'ultimo spazio prima del limite
+    for (i = max_chars; i > 0; i--) {
+        if (str[i] == ' ' || str[i] == '\0') {
+            return i;
+        }
+    }
+    
+    // Se non ci sono spazi, taglia brutalmente
+    return max_chars;
+}
+
+// Calcola il layout ottimale
+int calculate_optimal_layout(const char *text, int display_width, int display_height, 
+                             LayoutResult *result) {
+    int text_len = strlen(text);
+    int font_idx, max_lines, chars_per_line;
+    const char *ptr;
+    int current_pos, line, wrap_point;
+    
+    // Prova ogni font dal più grande al più piccolo
+    for (font_idx = 0; font_idx < NUM_FONTS; font_idx++) {
+        chars_per_line = display_width / fonts[font_idx].width;
+        max_lines = display_height / fonts[font_idx].height;
+        
+        if (chars_per_line == 0 || max_lines == 0) {
+            continue;  // Font troppo grande
+        }
+        
+        // Simula il word wrap per vedere se ci sta
+        ptr = text;
+        current_pos = 0;
+        line = 0;
+        
+        while (*ptr && line < max_lines) {
+            // Trova dove spezzare questa riga
+            wrap_point = find_wrap_point(ptr, chars_per_line);
+            
+            if (wrap_point == 0) {
+                break;  // Non ci sta nemmeno un carattere
+            }
+            
+            result->line_starts[line] = current_pos;
+            result->line_lengths[line] = wrap_point;
+            
+            ptr += wrap_point;
+            current_pos += wrap_point;
+            
+            // Salta spazi all'inizio della nuova riga
+            while (*ptr == ' ') {
+                ptr++;
+                current_pos++;
+            }
+            
+            line++;
+            
+            if (*ptr == '\0') {
+                // Stringa finita, tutto OK
+                result->font_idx = font_idx;
+                result->num_lines = line;
+                result->chars_per_line = chars_per_line;
+                return 1;  // Successo
+            }
+        }
+        
+        // Se siamo qui e la stringa è finita, va bene
+        if (*ptr == '\0') {
+            result->font_idx = font_idx;
+            result->num_lines = line;
+            result->chars_per_line = chars_per_line;
+            return 1;  // Successo
+        }
+    }
+    
+    // Nessun font funziona - usa il più piccolo comunque
+    result->font_idx = NUM_FONTS - 1;
+    result->num_lines = max_lines;
+    result->chars_per_line = chars_per_line;
+    return 0;  // Fallimento (testo troncato)
+}
+
+// Funzione principale per disegnare il testo ottimizzato
+void draw_optimized_text(OBDISP *pOBD, const char *text, 
+                        int display_x, int display_y,
+                        int display_width, int display_height,
+                        int bInvert) {
+    LayoutResult layout;
+    int i, x, y, total_height, start_y;
+    char line_buffer[256];
+    
+    // Calcola il layout ottimale
+    if (!calculate_optimal_layout(text, display_width, display_height, &layout)) {
+        // Testo troppo lungo, verrà troncato
+    }
+    
+    const FontInfo *font = &fonts[layout.font_idx];
+    
+    // Calcola l'altezza totale del testo
+    total_height = layout.num_lines * font->height;
+    
+    // Centra verticalmente
+    start_y = display_y + (display_height - total_height) / 2;
+    
+    // Disegna ogni riga
+    for (i = 0; i < layout.num_lines; i++) {
+        // Copia la riga nel buffer
+        int line_len = layout.line_lengths[i];
+        if (line_len >= sizeof(line_buffer)) {
+            line_len = sizeof(line_buffer) - 1;
+        }
+        
+        memcpy(line_buffer, text + layout.line_starts[i], line_len);
+        line_buffer[line_len] = '\0';
+        
+        // Calcola larghezza riga per centrare orizzontalmente
+        int line_width = strlen(line_buffer) * font->width;
+        x = display_x + (display_width - line_width) / 2;
+        y = start_y + i * font->height;
+        
+        // Disegna la riga
+        obdScaledString(pOBD, x, y, line_buffer, font->size_code, 
+                       bInvert, 256, 256, 0);
+    }
+}
