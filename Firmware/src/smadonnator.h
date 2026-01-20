@@ -2,7 +2,7 @@
 
 char *da[]={
         "dalla madonna maiala","dalla portanna la madonna",
-        "dal dio bubu'","dallo scanato gesu' boia",
+        "dal dio bubu\'","dallo scanato gesu\' boia",
         "dalla canaja de dio","dai fedeli inferociti",
         "dai testimoni di geova","dai terrapiattisti",
         "dagli spacciatori di ostie","dai musulmani"
@@ -27,7 +27,7 @@ const char *aggettivi[]={
         "ausiliario del traffico","scopino del cesso",
         "comunista","cassonetto dell'umido",
         "al posto della carta igienica","miserabile","serpentiforme",
-        "iperdiarroico", "coprofilo", "necrofilo", 
+        "iperdiarroico", "coprofilo", "necrofilo" 
     };
 static int aggettivi_size = sizeof(aggettivi) / sizeof(aggettivi[0]);
 
@@ -53,8 +53,8 @@ const char *soggetti[]={
         "Porco di quel dio",
         "Dio",
         "Il dio stronzo",
-        "Gesu'",
-        "Gesu' merda",
+        "Gesu\'",
+        "Gesu\' merda",
         "San giuseppe",
         "Il papa",
         "La merda del clero",
