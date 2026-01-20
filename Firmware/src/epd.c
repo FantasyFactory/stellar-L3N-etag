@@ -29,7 +29,7 @@ RAM uint8_t epd_model = 0; // 0 = Undetected, 1 = BW213, 2 = BWR213, 3 = BWR154,
 const char *epd_model_string[] = {"NC", "BW213", "BWR213", "BWR154", "213ICE", "BWR296"};
 RAM uint8_t epd_update_state = 0;
 
-RAM uint8_t epd_scene = 2;
+RAM uint8_t epd_scene = 5;
 RAM uint8_t epd_wait_update = 0;
 
 RAM uint8_t hour_refresh = 100;
@@ -639,10 +639,11 @@ void epd_myScene(struct date_time _time, uint16_t battery_mv, int16_t temperatur
 
     char buff[300];
     memset(buff, 0, sizeof(buff));
+    srand_custom(clock_time());
     smadonnator(buff);
     draw_optimized_text(&obd, buff, 
                     47, 96,      // Posizione area
-                    250, 24,   // Dimensioni area
+                    240, 24,   // Dimensioni area
                     0);
     //obdWriteStringCustom(&obd, (GFXfont *)&Dialog_plain_16, 10, 120, (char *)buff, 1);
 
@@ -650,8 +651,8 @@ void epd_myScene(struct date_time _time, uint16_t battery_mv, int16_t temperatur
     //drawMAC(&obd, 48, 107);
 
     // battery level
-    drawBattery(&obd, battery_mv, 252, 107, false);
-    //drawBattery(&obd, battery_mv, 285, 1, true);
+    //drawBattery(&obd, battery_mv, 252, 107, false);
+    drawBattery(&obd, battery_mv, 287, 96, true);
 
     FixBuffer(epd_temp, epd_buffer, epd_width, epd_height);
 
@@ -745,15 +746,19 @@ void drawMAC(OBDISP *pOBD, int mac_x, int mac_y) {
 }
 
 void drawBattery(OBDISP *pOBD, uint16_t battery_mv, int bat_x, int bat_y, bool vertical) {   
-    char buffer[32];
-    uint16_t battery_level;
-    battery_level = get_battery_level(battery_mv);
-    sprintf(buffer, "%d%%", battery_level);
     if(vertical) {
-        obdRectangle(pOBD, bat_x+5, bat_y, bat_x +7, bat_y +2, 1, 1);
-        obdRectangle(pOBD, bat_x, bat_y+3, bat_x + 10, bat_y +40, 1, 1);
-        obdScaledString(pOBD, bat_x +9, bat_y +7, (char *)buffer, FONT_8x8, 1, 256, 256, ROT_90);
+        uint16_t battery_level;
+        if(battery_mv < 2200) battery_level=20;
+        else if(battery_mv > 3100) battery_level=0;
+        else battery_level = 20 -((battery_mv - 2200) / 45);
+        obdRectangle(pOBD, bat_x+2, bat_y, bat_x +5, bat_y +1, 1, 1);
+        obdRectangle(pOBD, bat_x, bat_y+2, bat_x + 7, bat_y +23, 1, 0);
+        obdRectangle(pOBD, bat_x+1, bat_y+3+battery_level, bat_x + 6, bat_y +23, 1, 1);
     } else {
+        char buffer[32];
+        uint16_t battery_level;
+        battery_level = get_battery_level(battery_mv);
+        sprintf(buffer, "%d%%", battery_level);
         obdRectangle(pOBD, bat_x, bat_y+4, bat_x +2, bat_y +8, 1, 1);
         obdRectangle(pOBD, bat_x +3, bat_y, bat_x + 40, bat_y +12, 1, 1);
         obdScaledString(pOBD, bat_x +7, bat_y +3, (char *)buffer, FONT_8x8, 1, 256, 256, ROT_0);
@@ -871,6 +876,8 @@ const struct holiday fixed_holidays[] = {
     {8, 12, "Immacolata"},
     {25, 12, "Natale"},
     {26, 12, "S.Stefano"},
+    {19, 5, "Comp. Corrado"},
+    {4, 5, "Star Wars Day"},
     {0, 0, NULL}  // terminatore
 };
 

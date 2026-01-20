@@ -2,7 +2,7 @@
 
 char *da[]={
         "dalla madonna maiala","dalla portanna la madonna",
-        "dal dio bubù","dallo scanato gesù boia",
+        "dal dio bubu'","dallo scanato gesu' boia",
         "dalla canaja de dio","dai fedeli inferociti",
         "dai testimoni di geova","dai terrapiattisti",
         "dagli spacciatori di ostie","dai musulmani"
@@ -44,7 +44,7 @@ const char *sorti[]={
         "inculato con l'albero di natale","inculato col crocifisso",
         "messo nel presepe al posto dell'asinello",
         "venduto su temu","costretto a sputare controvento",
-        "talmente stupido da essere deriso"
+        "talmente stupido da essere deriso", "contromano in tangenziale", "maligno"
     };
 static int sorti_size = sizeof(sorti) / sizeof(sorti[0]);
 
@@ -53,8 +53,8 @@ const char *soggetti[]={
         "Porco di quel dio",
         "Dio",
         "Il dio stronzo",
-        "Gesù",
-        "Gesù merda",
+        "Gesu'",
+        "Gesu' merda",
         "San giuseppe",
         "Il papa",
         "La merda del clero",

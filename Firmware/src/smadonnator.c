@@ -6,7 +6,7 @@
 static unsigned long rng_state = 1463534242UL;
 
 /* Permette di impostare il seed dall'esterno */
-void srand_custom(unsigned long seed)
+extern void srand_custom(unsigned long seed)
 {
     if (seed != 0)
         rng_state = seed;
