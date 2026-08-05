@@ -37,6 +37,7 @@ void reset_settings_to_default(void)
 	settings.measure_interval = 10;
 	settings.temp_offset = 0;
 	settings.temp_alarm_point = 5;
+	settings.epd_profile = 2; // HINK-E0213A200 (our confirmed panel), see epd_drivers[] in epd.c
 }
 
 void save_settings_to_flash(void)

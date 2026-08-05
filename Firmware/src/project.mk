@@ -11,8 +11,7 @@ $(OUT_PATH)/etime.o \
 $(OUT_PATH)/epd_spi.o \
 $(OUT_PATH)/epd.o \
 $(OUT_PATH)/epd_bw_213.o \
-$(OUT_PATH)/epd_bwr_296.o \
-$(OUT_PATH)/epd_bwr_213.o \
+$(OUT_PATH)/epd_ssd168x.o \
 $(OUT_PATH)/epd_bw_213_ice.o \
 $(OUT_PATH)/ota.o \
 $(OUT_PATH)/led.o \

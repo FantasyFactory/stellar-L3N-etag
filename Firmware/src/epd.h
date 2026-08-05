@@ -37,8 +37,16 @@ void draw_optimized_text(OBDISP *pOBD, const char *text, int display_x, int disp
 void set_EPD_scene(uint8_t scene);
 void set_EPD_wait_flush();
 
+// Active panel resolution, set by EPD_detect_model()/set_EPD_model(). Scene
+// drawing code must use these instead of the epd_width/epd_height macros
+// above, which are only the maximum buffer capacity (296x128, the largest
+// supported panel), not necessarily the resolution actually in use.
+extern uint16_t epd_res_width;
+extern uint8_t epd_res_height;
+
 void init_epd(void);
 uint8_t EPD_read_temp(void);
+int16_t EPD_read_temp_raw(void); // Q8.8 fixed point, /256.0 = DegC
 void EPD_Display(unsigned char *image, unsigned char * red_image, int size, uint8_t full_or_partial);
 void epd_display_tiff(uint8_t *pData, int iSize);
 void epd_set_sleep(void);

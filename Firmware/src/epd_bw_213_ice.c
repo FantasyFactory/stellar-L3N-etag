@@ -44,10 +44,11 @@ _attribute_ram_code_ uint8_t EPD_BW_213_ice_detect(void)
     return 1;
 }
 
-_attribute_ram_code_ uint8_t EPD_BW_213_ice_read_temp(void)
+_attribute_ram_code_ int16_t EPD_BW_213_ice_read_temp_raw(void)
 {
     uint8_t epd_temperature = 0 ;
-    
+    uint8_t epd_temperature_dec = 0 ;
+
     // SW Reset
     EPD_WriteCmd(0x12);
 
@@ -111,31 +112,33 @@ _attribute_ram_code_ uint8_t EPD_BW_213_ice_read_temp(void)
     
     EPD_CheckStatus_inverted(100);
 
-    // Temperature sensor read from register
+    // Temperature sensor read from register: 12-bit V, DegC=V/16 (see
+    // docs/HINK-E0213A200-A0_Spec_bwr.pdf sec.8). byte1<<8|byte2
+    // reconstructs 16*V, i.e. Q8.8 fixed point -- divide by 256.0 for DegC.
     EPD_WriteCmd(0x1B);
-    epd_temperature = EPD_SPI_read();    
-    EPD_SPI_read();
+    epd_temperature = EPD_SPI_read();
+    epd_temperature_dec = EPD_SPI_read();
 
     WaitMs(5);
 
     // Display update control
     EPD_WriteCmd(0x22);
     EPD_WriteData(0xB1);
-    
+
     // Master Activation
     EPD_WriteCmd(0x20);
 
     EPD_CheckStatus_inverted(100);
-    
+
     // Display update control
     EPD_WriteCmd(0x21);
     EPD_WriteData(0x03);
-    
+
     // deep sleep
     EPD_WriteCmd(0x10);
     EPD_WriteData(0x01);
 
-    return epd_temperature;
+    return (int16_t)((epd_temperature << 8) | epd_temperature_dec);
 }
 
 _attribute_ram_code_ uint8_t EPD_BW_213_ice_Display(unsigned char *image, int size, uint8_t full_or_partial)

@@ -5,14 +5,13 @@
 #include "epd.h"
 #include "epd_spi.h"
 #include "epd_bw_213.h"
-#include "epd_bwr_213.h"
 #include "epd_bw_213_ice.h"
-//#include "epd_bwr_154.h"
-#include "epd_bwr_296.h"
+#include "epd_ssd168x.h"
 #include "drivers.h"
 #include "stack/ble/ble.h"
 
 #include "battery.h"
+#include "flash.h"
 
 #include "OneBitDisplay.h"
 #include "TIFF_G4.h"
@@ -23,11 +22,84 @@ extern const uint8_t ucMirror[];
 #include "font16zh.h"
 #include "font30.h"
 
+extern settings_struct settings;
 
-
-RAM uint8_t epd_model = 0; // 0 = Undetected, 1 = BW213, 2 = BWR213, 3 = BWR154, 4 = BW213ICE, 5 BWR296
-const char *epd_model_string[] = {"NC", "BW213", "BWR213", "BWR154", "213ICE", "BWR296"};
+RAM uint8_t epd_model = 0; // 0 = Undetected, 1 = BW213, 2 = HINK213BWR, 4 = BW213ICE, 5 = BWR296
+const char *epd_model_string[] = {"NC", "BW213", "HINK213", "BWR154", "213ICE", "BWR296"};
+RAM uint16_t epd_res_width = epd_width;   // active panel resolution, set by EPD_detect_model()
+RAM uint8_t epd_res_height = epd_height;  // (padded to a full byte)
 RAM uint8_t epd_update_state = 0;
+
+// One entry per supported controller/panel combination. The three SSD1680
+// entries all go through the single parametrized epd_ssd168x driver; only
+// their resolution/color profile differs. BW213ICE and BW213 (a genuinely
+// different controller, UC8151) keep their own implementation but are
+// exposed through the same interface so epd.c never branches on model
+// number again outside of epd_find_driver().
+typedef struct
+{
+    uint8_t id;
+    uint16_t width;
+    uint8_t height;
+    uint8_t has_red;
+    uint8_t busy_active_high; // set for controllers where EPD_IS_BUSY() reads inverted (UC8151)
+    int16_t (*read_temp_raw)(void); // Q8.8 fixed point, /256.0 = DegC
+    uint8_t (*display)(unsigned char *bw, unsigned char *red, int size, uint8_t full_or_partial);
+    void (*set_sleep)(void);
+} epd_driver_t;
+
+static uint8_t drv_hink213bwr_display(unsigned char *bw, unsigned char *red, int size, uint8_t fop) { return EPD_SSD168x_Display(&epd_ssd168x_hink_213bwr, bw, red, size, fop); }
+static int16_t drv_hink213bwr_read_temp(void) { return EPD_SSD168x_read_temp_raw(&epd_ssd168x_hink_213bwr); }
+static void drv_hink213bwr_sleep(void) { EPD_SSD168x_set_sleep(&epd_ssd168x_hink_213bwr); }
+
+static uint8_t drv_bwr296_display(unsigned char *bw, unsigned char *red, int size, uint8_t fop) { return EPD_SSD168x_Display(&epd_ssd168x_bwr_296, bw, red, size, fop); }
+static int16_t drv_bwr296_read_temp(void) { return EPD_SSD168x_read_temp_raw(&epd_ssd168x_bwr_296); }
+static void drv_bwr296_sleep(void) { EPD_SSD168x_set_sleep(&epd_ssd168x_bwr_296); }
+
+// ice and bw213 (UC8151) have no native RED plane: if a red buffer is
+// passed anyway, fold it into the black plane (red -> black) before
+// dispatching, same guarantee the ssd168x driver gives natively.
+static void epd_merge_red_into_bw(unsigned char *bw, const unsigned char *red, int size)
+{
+    for (int i = 0; i < size; i++)
+        bw[i] &= ~red[i];
+}
+
+static uint8_t drv_ice_display(unsigned char *bw, unsigned char *red, int size, uint8_t fop)
+{
+    if (red != NULL)
+        epd_merge_red_into_bw(bw, red, size);
+    return EPD_BW_213_ice_Display(bw, size, fop);
+}
+static int16_t drv_ice_read_temp(void) { return EPD_BW_213_ice_read_temp_raw(); }
+static void drv_ice_sleep(void) { EPD_BW_213_ice_set_sleep(); }
+
+static uint8_t drv_bw213_display(unsigned char *bw, unsigned char *red, int size, uint8_t fop)
+{
+    if (red != NULL)
+        epd_merge_red_into_bw(bw, red, size);
+    return EPD_BW_213_Display(bw, size, fop);
+}
+// No datasheet-confirmed sub-degree precision for the UC8151 family; expose
+// its whole-degree reading in the same Q8.8 shape so callers stay generic.
+static int16_t drv_bw213_read_temp(void) { return (int16_t)(EPD_BW_213_read_temp() << 8); }
+static void drv_bw213_sleep(void) { EPD_BW_213_set_sleep(); }
+
+static const epd_driver_t epd_drivers[] = {
+    {2, 250, 128, 1, 0, drv_hink213bwr_read_temp, drv_hink213bwr_display, drv_hink213bwr_sleep}, // HINK-E0213A200, confirmed real panel
+    {5, 296, 128, 1, 0, drv_bwr296_read_temp, drv_bwr296_display, drv_bwr296_sleep},
+    {4, 212, 104, 0, 0, drv_ice_read_temp, drv_ice_display, drv_ice_sleep},
+    {1, 250, 128, 0, 1, drv_bw213_read_temp, drv_bw213_display, drv_bw213_sleep}, // UC8151, different controller entirely
+};
+#define EPD_DRIVER_COUNT (sizeof(epd_drivers) / sizeof(epd_drivers[0]))
+
+static const epd_driver_t *epd_find_driver(uint8_t id)
+{
+    for (unsigned int i = 0; i < EPD_DRIVER_COUNT; i++)
+        if (epd_drivers[i].id == id)
+            return &epd_drivers[i];
+    return NULL;
+}
 
 RAM uint8_t epd_scene = 5;
 RAM uint8_t epd_wait_update = 0;
@@ -64,12 +136,18 @@ RAM uint8_t day_temp[96]={17,17,17,17, 16,16,16,16, 15,15,15,15, 15,15,15,15, 15
 
 
 
-RAM uint16_t myTemp=0;
+RAM int16_t epd_temp_raw = 0; // last raw Q8.8 temperature reading (see epd_ssd168x.h)
 
 // With this we can force a display if it wasnt detected correctly
 void set_EPD_model(uint8_t model_nr)
 {
+    if (!epd_find_driver(model_nr))
+        return; // ignore unknown ids, keep whatever was working
     epd_model = model_nr;
+    const epd_driver_t *drv = epd_find_driver(epd_model);
+    epd_res_width = drv->width;
+    epd_res_height = drv->height;
+    settings.epd_profile = epd_model; // persisted on next save_settings_to_flash()
 }
 
 // With this we can force a display if it wasnt detected correctly
@@ -83,44 +161,35 @@ void set_EPD_wait_flush() {
     epd_wait_update = 1;
 }
 
-
-
-// Here we detect what E-Paper display is connected
+// Detects the controller FAMILY (SSD1680-class vs UC8151-class) reliably
+// via the SSD1680 Status Bit Read (cmd 0x2F, Chip ID). This can NOT tell
+// apart different panel sizes/colors sharing the same SSD1680 die -- that
+// is a configured choice (settings.epd_profile, set via set_EPD_model() /
+// BLE cmd 0xE0), defaulting to our confirmed real panel (HINK-E0213A200,
+// id 2) the first time no valid profile has been saved yet.
 _attribute_ram_code_ void EPD_detect_model(void)
 {
     EPD_init();
-    // system power
     EPD_POWER_ON();
-
     WaitMs(10);
-    // Reset the EPD driver IC
     gpio_write(EPD_RESET, 0);
     WaitMs(10);
     gpio_write(EPD_RESET, 1);
     WaitMs(10);
 
-    // Here we neeed to detect it
-    if (EPD_BWR_296_detect())
+    uint8_t chosen_id;
+    if (EPD_SSD168x_detect_family())
     {
-        epd_model = 5;
-    }
-    else if (EPD_BWR_213_detect())
-    {
-        epd_model = 2;
-    }
-//    else if (EPD_BWR_154_detect())// Right now this will never trigger, the 154 is same to 213BWR right now.
-//    {
-//        epd_model = 3;
-//    }
-    else if (EPD_BW_213_ice_detect())
-    {
-        epd_model = 4;
+        chosen_id = epd_find_driver(settings.epd_profile) ? settings.epd_profile : 2;
+        if (chosen_id == 1 || chosen_id == 4) // a saved profile from the other family makes no sense here
+            chosen_id = 2;
     }
     else
     {
-        epd_model = 1;
+        chosen_id = 1; // UC8151, no reliable positive detect available -> last-resort fallback
     }
-    epd_model = 5; // FIXME: only for bwr_296
+
+    set_EPD_model(chosen_id);
     EPD_POWER_OFF();
 }
 
@@ -133,28 +202,16 @@ _attribute_ram_code_ uint8_t EPD_read_temp(void)
         EPD_detect_model();
 
     EPD_init();
-    // system power
     EPD_POWER_ON();
     WaitMs(5);
-    // Reset the EPD driver IC
     gpio_write(EPD_RESET, 0);
     WaitMs(10);
     gpio_write(EPD_RESET, 1);
     WaitMs(10);
 
-    if (epd_model == 1)
-        epd_temperature = EPD_BW_213_read_temp();
-    else if (epd_model == 2)
-        epd_temperature = EPD_BWR_213_read_temp();
-//    else if (epd_model == 3)
-//        epd_temperature = EPD_BWR_154_read_temp();
-    else if (epd_model == 4)
-        epd_temperature = EPD_BW_213_ice_read_temp();
-    else if (epd_model == 5)
-        epd_temperature = EPD_BW_213_ice_read_temp();
-        //epd_temperature = EPD_BWR_296_read_temp();
-
-    myTemp = EPD_BWR_296_read_temp();
+    const epd_driver_t *drv = epd_find_driver(epd_model);
+    epd_temp_raw = drv->read_temp_raw();
+    epd_temperature = (uint8_t)(epd_temp_raw >> 8);
 
     EPD_POWER_OFF();
 
@@ -163,34 +220,29 @@ _attribute_ram_code_ uint8_t EPD_read_temp(void)
     return epd_temperature;
 }
 
+// Same reading as EPD_read_temp(), but as a signed Q8.8 fixed point value
+// (divide by 256.0 for DegC) instead of a truncated whole degree.
+_attribute_ram_code_ int16_t EPD_read_temp_raw(void)
+{
+    EPD_read_temp();
+    return epd_temp_raw;
+}
+
 _attribute_ram_code_ void EPD_Display(unsigned char *image, unsigned char *red_image, int size, uint8_t full_or_partial)
 {
     if (!epd_model)
         EPD_detect_model();
 
     EPD_init();
-    // system power
     EPD_POWER_ON();
     WaitMs(5);
-    // Reset the EPD driver IC
     gpio_write(EPD_RESET, 0);
     WaitMs(10);
     gpio_write(EPD_RESET, 1);
     WaitMs(10);
 
-    if (epd_model == 1)
-        epd_temperature = EPD_BW_213_Display(image, size, full_or_partial);
-    else if (epd_model == 2)
-        epd_temperature = EPD_BWR_213_Display(image, size, full_or_partial);
-//    else if (epd_model == 3)
-//        epd_temperature = EPD_BWR_154_Display(image, size, full_or_partial);
-    else if (epd_model == 4)
-        epd_temperature = EPD_BW_213_ice_Display(image, size, full_or_partial);
-    else if (epd_model == 5)
-        epd_temperature = EPD_BWR_296_Display_BWR(image, red_image, size, full_or_partial);
-        //epd_temperature = EPD_BWR_296_Display(image, size, full_or_partial);
-
-    //myTemp = myEPD_BWR_296_read_temp();
+    const epd_driver_t *drv = epd_find_driver(epd_model);
+    epd_temperature = drv->display(image, red_image, size, full_or_partial);
 
     epd_temperature_is_read = 1;
     epd_update_state = 1;
@@ -201,14 +253,8 @@ _attribute_ram_code_ void epd_set_sleep(void)
     if (!epd_model)
         EPD_detect_model();
 
-    if (epd_model == 1)
-        EPD_BW_213_set_sleep();
-    else if (epd_model == 2)
-        EPD_BWR_213_set_sleep();
-//    else if (epd_model == 3)
-//        EPD_BWR_154_set_sleep();
-    else if (epd_model == 4 || epd_model == 5)
-        EPD_BW_213_ice_set_sleep();
+    const epd_driver_t *drv = epd_find_driver(epd_model);
+    drv->set_sleep();
 
     EPD_POWER_OFF();
     epd_update_state = 0;
@@ -222,17 +268,13 @@ _attribute_ram_code_ uint8_t epd_state_handler(void)
         // Nothing todo
         break;
     case 1: // check if refresh is done and sleep epd if so
-        if (epd_model == 1)
-        {
-            if (!EPD_IS_BUSY())
-                epd_set_sleep();
-        }
-        else
-        {
-            if (EPD_IS_BUSY())
-                epd_set_sleep();
-        }
+    {
+        const epd_driver_t *drv = epd_find_driver(epd_model);
+        uint8_t busy_active_high = drv ? drv->busy_active_high : 0;
+        if (busy_active_high ? !EPD_IS_BUSY() : EPD_IS_BUSY())
+            epd_set_sleep();
         break;
+    }
     }
     return epd_update_state;
 }
@@ -302,33 +344,8 @@ _attribute_ram_code_ void epd_display(struct date_time _time, uint16_t battery_m
     {
         EPD_detect_model();
     }
-    uint16_t resolution_w = 250;
-    uint16_t resolution_h = 128; // 122 real pixel, but needed to have a full byte
-    if (epd_model == 1)
-    {
-        resolution_w = 250;
-        resolution_h = 128; // 122 real pixel, but needed to have a full byte
-    }
-    else if (epd_model == 2)
-    {
-        resolution_w = 250;
-        resolution_h = 128; // 122 real pixel, but needed to have a full byte
-    }
-    else if (epd_model == 3)
-    {
-        resolution_w = 200;
-        resolution_h = 200;
-    }
-    else if (epd_model == 4)
-    {
-        resolution_w = 212;
-        resolution_h = 104;
-    }
-    else if (epd_model == 5)
-    {
-        resolution_w = 296;
-        resolution_h = 128;
-    }
+    uint16_t resolution_w = epd_res_width;
+    uint16_t resolution_h = epd_res_height;
 
     epd_clear();
 
@@ -343,7 +360,11 @@ _attribute_ram_code_ void epd_display(struct date_time _time, uint16_t battery_m
     obdWriteStringCustom(&obd, (GFXfont *)&Dialog_plain_16, 232, 20, (char *)buff, 1);
     sprintf(buff, "%02d:%02d", _time.tm_hour, _time.tm_min);
     obdWriteStringCustom(&obd, (GFXfont *)&DSEG14_Classic_Mini_Regular_40, 75, 65, (char *)buff, 1);
-    sprintf(buff, "-----%d'C-----", EPD_read_temp());
+    int16_t traw = EPD_read_temp_raw(); // Q8.8: DegC = traw/256.0
+    int t_whole = traw / 256;           // truncates toward zero -> sign lands here
+    int t_frac = traw % 256;
+    if (t_frac < 0) t_frac = -t_frac;
+    sprintf(buff, "--%d.%01d'C--%dx%d--", t_whole, (t_frac * 10) / 256, resolution_w, resolution_h);
     obdWriteStringCustom(&obd, (GFXfont *)&Special_Elite_Regular_30, 10, 95, (char *)buff, 1);
     sprintf(buff, "Battery %dmV  %d%%", battery_mv, battery_level);
     obdWriteStringCustom(&obd, (GFXfont *)&Dialog_plain_16, 10, 120, (char *)buff, 1);
@@ -430,7 +451,7 @@ void epd_display_time_with_date(struct date_time _time, uint16_t battery_mv, int
 
     epd_clear();
 
-    obdCreateVirtualDisplay(&obd, epd_width, epd_height, epd_temp);
+    obdCreateVirtualDisplay(&obd, epd_res_width, epd_res_height, epd_temp);
     obdFill(&obd, 0, 0); // fill with white
 
     char buff[100];
@@ -486,9 +507,9 @@ void epd_display_time_with_date(struct date_time _time, uint16_t battery_mv, int
     }
     obdWriteStringCustom(&obd, (GFXfont *)&Dialog_plain_16_zh, 200, 122, (char *)buff, 1);
 
-    FixBuffer(epd_temp, epd_buffer, epd_width, epd_height);
+    FixBuffer(epd_temp, epd_buffer, epd_res_width, epd_res_height);
 
-    EPD_Display(epd_buffer, NULL, epd_width * epd_height / 8, full_or_partial);
+    EPD_Display(epd_buffer, NULL, epd_res_width * epd_res_height / 8, full_or_partial);
 }
 
 
@@ -503,33 +524,8 @@ void epd_display_info(struct date_time _time, uint16_t battery_mv, int16_t tempe
     {
         EPD_detect_model();
     }
-    uint16_t resolution_w = 250;
-    uint16_t resolution_h = 128; // 122 real pixel, but needed to have a full byte
-    if (epd_model == 1)
-    {
-        resolution_w = 250;
-        resolution_h = 128; // 122 real pixel, but needed to have a full byte
-    }
-    else if (epd_model == 2)
-    {
-        resolution_w = 250;
-        resolution_h = 128; // 122 real pixel, but needed to have a full byte
-    }
-    else if (epd_model == 3)
-    {
-        resolution_w = 200;
-        resolution_h = 200;
-    }
-    else if (epd_model == 4)
-    {
-        resolution_w = 212;
-        resolution_h = 104;
-    }
-    else if (epd_model == 5)
-    {
-        resolution_w = 296;
-        resolution_h = 128;
-    }
+    uint16_t resolution_w = epd_res_width;
+    uint16_t resolution_h = epd_res_height;
 
     epd_clear();
 
@@ -545,7 +541,11 @@ void epd_display_info(struct date_time _time, uint16_t battery_mv, int16_t tempe
     obdWriteStringCustom(&obd, (GFXfont *)&Dialog_plain_16, 232, 20, (char *)buff, 1);
     sprintf(buff, "%02d:%02d", _time.tm_hour, _time.tm_min);
     obdWriteStringCustom(&obd, (GFXfont *)&DSEG14_Classic_Mini_Regular_40, 75, 65, (char *)buff, 1);
-    sprintf(buff, "-----%d'C-----", EPD_read_temp());
+    int16_t traw = EPD_read_temp_raw(); // Q8.8: DegC = traw/256.0
+    int t_whole = traw / 256;           // truncates toward zero -> sign lands here
+    int t_frac = traw % 256;
+    if (t_frac < 0) t_frac = -t_frac;
+    sprintf(buff, "--%d.%01d'C--%dx%d--", t_whole, (t_frac * 10) / 256, resolution_w, resolution_h);
     obdWriteStringCustom(&obd, (GFXfont *)&Special_Elite_Regular_30, 10, 95, (char *)buff, 1);
     sprintf(buff, "Battery %dmV  %d%%", battery_mv, battery_level);
     obdWriteStringCustom(&obd, (GFXfont *)&Dialog_plain_16, 10, 120, (char *)buff, 1);
@@ -560,7 +560,7 @@ void epd_display_my(struct date_time _time, uint16_t battery_mv, int16_t tempera
 
     epd_clear();
 
-    obdCreateVirtualDisplay(&obd, epd_width, epd_height, epd_temp);
+    obdCreateVirtualDisplay(&obd, epd_res_width, epd_res_height, epd_temp);
     obdFill(&obd, 0, 0); // fill with white
 
     char buff[100];
@@ -616,34 +616,34 @@ void epd_display_my(struct date_time _time, uint16_t battery_mv, int16_t tempera
     }
     obdWriteStringCustom(&obd, (GFXfont *)&Dialog_plain_16, 200, 122, (char *)buff, 1);
 
-    FixBuffer(epd_temp, epd_buffer, epd_width, epd_height);
+    FixBuffer(epd_temp, epd_buffer, epd_res_width, epd_res_height);
 
-    EPD_Display(epd_buffer, NULL, epd_width * epd_height / 8, full_or_partial);
+    EPD_Display(epd_buffer, NULL, epd_res_width * epd_res_height / 8, full_or_partial);
 }
 
 void epd_myScene(struct date_time _time, uint16_t battery_mv, int16_t temperature, uint8_t full_or_partial) {
 
     epd_clear();
 
-    obdCreateVirtualDisplay(&obd, epd_width, epd_height, epd_temp);
+    obdCreateVirtualDisplay(&obd, epd_res_width, epd_res_height, epd_temp);
     obdFill(&obd, 0, 0); // fill with white
 
     // Calendario
-    drawCalendar(&obd, _time, 47, 0, false);
+    drawCalendar(&obd, _time, 0, 0, false);
 
     // Orologio
-    drawClock(&obd, _time, 148, 1);
+    drawClock(&obd, _time, 101, 1);
  
     //Grafico temperatura
-    drawTempGraph(&obd, _time, temperature, 148, 43, false);
+    drawTempGraph(&obd, _time, temperature, 102, 43, false);
 
     char buff[300];
     memset(buff, 0, sizeof(buff));
     srand_custom(clock_time());
     smadonnator(buff);
     draw_optimized_text(&obd, buff, 
-                    47, 96,      // Posizione area
-                    240, 24,   // Dimensioni area
+                    0, 96,      // Posizione area
+                    192, 24,   // Dimensioni area
                     0);
     //obdWriteStringCustom(&obd, (GFXfont *)&Dialog_plain_16, 10, 120, (char *)buff, 1);
 
@@ -652,11 +652,11 @@ void epd_myScene(struct date_time _time, uint16_t battery_mv, int16_t temperatur
 
     // battery level
     //drawBattery(&obd, battery_mv, 252, 107, false);
-    drawBattery(&obd, battery_mv, 287, 96, true);
+    drawBattery(&obd, battery_mv, 240, 96, true);
 
-    FixBuffer(epd_temp, epd_buffer, epd_width, epd_height);
+    FixBuffer(epd_temp, epd_buffer, epd_res_width, epd_res_height);
 
-    EPD_Display(epd_buffer, NULL, epd_width * epd_height / 8, full_or_partial);             
+    EPD_Display(epd_buffer, NULL, epd_res_width * epd_res_height / 8, full_or_partial);             
 
 }
 
