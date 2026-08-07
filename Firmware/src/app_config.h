@@ -8,6 +8,27 @@ extern "C" {
 
 #define ADVERTISING_INTERVAL 1600
 
+// Watchdog: armed in main.c right before entering the main while(1) loop
+// (NOT earlier -- arming it before user_init_normal()'s one-time boot
+// sequence, which includes RF/BLE stack bring-up, caused a boot loop: that
+// sequence can legitimately take a while, and nothing feeds the watchdog
+// until main_loop() itself starts running), fed from app.c's main_loop().
+// 10s gives generous margin above every bounded blocking operation actually
+// measured in this firmware (EPD SPI transfer ~150ms worst case, OTA flash
+// erase/write low tens of ms, debug sleep_ms(500) in cmd_parser.c) and above
+// the normal ~1s advertising-driven wake cadence, while still recovering
+// from a real hang in a reasonable time instead of needing a battery pull.
+#define WATCHDOG_INTERVAL_MS 10000
+// NOT CURRENTLY USED: the idea was for main_loop() to stop feeding the
+// watchdog if the EPD stayed "busy" longer than this, to also catch a
+// wedged-but-CPU-alive EPD, not just true CPU hangs. Disabled after it
+// caused a reboot loop -- the very first main_loop() after any boot always
+// forces a full refresh, and a full BWR refresh takes longer than the 8s
+// this was set to, so it fired on completely normal, expected behaviour.
+// Needs a real measurement of worst-case full-refresh duration before
+// re-attempting (see app.c main_loop()).
+#define WATCHDOG_EPD_STUCK_LIMIT_MS 8000
+
 #define RAM _attribute_data_retention_ // short version, this is needed to keep the values in ram after sleep
 
 #include "application/print/u_printf.h"

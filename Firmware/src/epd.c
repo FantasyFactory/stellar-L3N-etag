@@ -330,12 +330,19 @@ _attribute_ram_code_ void TIFFDraw(TIFFDRAW *pDraw)
 _attribute_ram_code_ void epd_display_tiff(uint8_t *pData, int iSize)
 {
     // test G4 decoder
+    // NB: the decode target is hardcoded to 250x122 regardless of which
+    // panel is actually active -- fine for HINK213 (250x128), but on
+    // BWR296/ice it'll draw into the wrong portion of a differently-sized
+    // canvas. Out of scope to fix properly here; what matters for now is
+    // that the final size below matches the REAL panel (not the old
+    // epd_buffer_size macro, i.e. max static capacity) so this can't
+    // desync the SPI protocol the way the epd_ble_service.c bug did.
     epd_clear();
     TIFF_openRAW(&tiff, 250, 122, BITDIR_MSB_FIRST, pData, iSize, TIFFDraw);
     TIFF_setDrawParameters(&tiff, 65536, TIFF_PIXEL_1BPP, 0, 0, 250, 122, NULL);
     TIFF_decode(&tiff);
     TIFF_close(&tiff);
-    EPD_Display(epd_buffer, NULL, epd_buffer_size, 1);
+    EPD_Display(epd_buffer, NULL, epd_res_width * epd_res_height / 8, 1);
 }
 
 extern uint8_t mac_public[6];
@@ -649,7 +656,7 @@ void epd_myScene(struct date_time _time, uint16_t battery_mv, int16_t temperatur
     smadonnator(buff);
     draw_optimized_text(&obd, buff, 
                     0, 96,      // Posizione area
-                    192, 24,   // Dimensioni area
+                    240, 24,   // Dimensioni area
                     0);
     //obdWriteStringCustom(&obd, (GFXfont *)&Dialog_plain_16, 10, 120, (char *)buff, 1);
 

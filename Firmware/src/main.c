@@ -73,11 +73,11 @@ _attribute_ram_code_ int main (void)    //must run in ramcode
 	clock_init(SYS_CLK_24M_Crystal);
 #endif
 	blc_app_loadCustomizedParameters();
-	
+
     init_led();
 	init_uart();
 	init_i2c();
-		
+
 	if( deepRetWakeUp ){
 		user_init_deepRetn ();
 		// No log line here on purpose: this runs on every single wake from
@@ -89,8 +89,20 @@ _attribute_ram_code_ int main (void)    //must run in ramcode
 	else{
 		printf("\r\n\r\n\r\nBooting\r\n\r\n\r\n\r\n");
 		user_init_normal ();
-	}	
+	}
     irq_enable();
+
+	// Hardware watchdog: armed here, right before the steady-state loop
+	// starts -- NOT earlier. The first attempt armed it at the very top of
+	// main(), before user_init_normal()'s one-time boot sequence (RF/BLE
+	// stack bring-up etc.); nothing feeds the watchdog until main_loop()
+	// itself starts running, so if that sequence took anywhere close to the
+	// interval, the chip reset before ever getting a chance to feed it --
+	// causing a continuous reboot loop that needed a hardware reflash to
+	// recover from. Fed every iteration from app.c's main_loop().
+	wd_set_interval_ms(WATCHDOG_INTERVAL_MS, CLOCK_16M_SYS_TIMER_CLK_1MS);
+	wd_start();
+
 	while (1) {
 		main_loop ();
 	}

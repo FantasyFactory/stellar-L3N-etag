@@ -39,7 +39,12 @@ int epd_ble_handle_write(void *p)
 	// Push buffer to display.
 	case 0x01:
 		ble_set_connection_speed(200);
-		EPD_Display(epd_buffer, epd_temp, epd_buffer_size, payload[1]);
+		// Must be the ACTIVE panel's byte count, not the epd_buffer_size
+		// macro (max static capacity, sized for the biggest supported
+		// panel/296px): telling the controller to load more bytes than its
+		// own RAM window (see epd_ssd168x.c) desyncs the SPI protocol and
+		// hangs, which is exactly what "Clear Screen" was doing before.
+		EPD_Display(epd_buffer, epd_temp, epd_res_width * epd_res_height / 8, payload[1]);
 		return 0;
 	// Set byte_pos.
 	case 0x02:
