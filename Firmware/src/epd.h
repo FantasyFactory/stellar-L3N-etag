@@ -55,6 +55,14 @@ uint8_t epd_state_handler(void);
 void epd_display_char(uint8_t data);
 void epd_clear(void);
 
+// Non-blocking "deep clean" cycle (black/white/red/white full refreshes) to
+// reduce ghosting. Call epd_purge_start() to kick it off (e.g. from a BLE
+// command), then epd_purge_tick() once per main_loop() iteration until
+// epd_purge_is_active() goes back to false.
+void epd_purge_start(void);
+uint8_t epd_purge_is_active(void);
+void epd_purge_tick(void);
+
 void update_time_scene(struct date_time _time, uint16_t battery_mv, int16_t temperature, void (*scene)(struct date_time, uint16_t, int16_t,  uint8_t));
 void epd_update(struct date_time _time, uint16_t battery_mv, int16_t temperature);
 
@@ -63,12 +71,12 @@ void epd_display_time_with_date(struct date_time _time, uint16_t battery_mv, int
 void epd_display_info(struct date_time _time, uint16_t battery_mv, int16_t temperature, uint8_t full_or_partial);
 void epd_display_my(struct date_time _time, uint16_t battery_mv, int16_t temperature, uint8_t full_or_partial);
 void epd_myScene(struct date_time _time, uint16_t battery_mv, int16_t temperature, uint8_t full_or_partial);
-void drawTempGraph(OBDISP *pOBD, OBDISP *pOBDRed, struct date_time _time, int16_t temperature, int tgr_x, int tgr_y, bool draw_placeholder);
+void drawTempGraph(OBDISP *pOBD, struct date_time _time, int16_t temperature, int tgr_x, int tgr_y, bool draw_placeholder);
 uint8_t scaleTemp(uint8_t temp, uint8_t max, uint8_t min, uint8_t height);
 void drawClock(OBDISP *pOBD, struct date_time _time, int cl_x, int cl_y);
 void drawMAC(OBDISP *pOBD, int mac_x, int mac_y);
 void drawBattery(OBDISP *pOBD, uint16_t battery_mv, int bat_x, int bat_y, bool vertical);
-void drawCalendar(OBDISP *pOBD, OBDISP *pOBDRed, struct date_time _time, int cal_x, int cal_y, bool draw_placeholder);
+void drawCalendar(OBDISP *pOBD, struct date_time _time, int cal_x, int cal_y, bool draw_placeholder);
 
 int calculateDayOfWeek(struct date_time date);
 int getDaysInMonth(int month, int year);

@@ -116,17 +116,17 @@ RAM uint8_t epd_temp[epd_buffer_size]; // for OneBitDisplay to draw into
 OBDISP obd;                        // virtual display structure
 TIFFIMAGE tiff;
 
-// Second plane, for scenes that want actual red output (drawTempGraph's
-// current-temperature line, drawCalendar's holidays). NOT retention RAM on
-// purpose: unlike epd_buffer/epd_temp (which also back the incremental
-// multi-packet BLE image upload in epd_ble_service.c, and so must survive
-// sleep between packets), these are only ever used synchronously within one
-// epd_myScene() call -- fully rewritten every time, nothing depends on them
-// surviving a sleep cycle. Keeping them out of retention matters: that
-// budget is only 32K and already tight (see debug_log.h).
+// Red plane buffer, used by epd_purge_tick()'s full-refresh anti-ghosting
+// cycle (black/white/red/white) and raw BLE image upload -- not by any
+// scene right now (see epd_myScene: red doesn't survive a partial refresh
+// on this panel). NOT retention RAM on purpose: unlike epd_buffer/epd_temp
+// (which also back the incremental multi-packet BLE image upload in
+// epd_ble_service.c, and so must survive sleep between packets), this is
+// only ever used synchronously within one call -- fully rewritten every
+// time, nothing depends on it surviving a sleep cycle. Keeping it out of
+// retention matters: that budget is only 32K and already tight (see
+// debug_log.h).
 uint8_t epd_buffer_red[epd_buffer_size];
-uint8_t epd_temp_red[epd_buffer_size];
-OBDISP obd_red;
 
 // Temperature hystory (every 15 minutes)
 // 96 values for 24 hours
@@ -295,6 +295,64 @@ _attribute_ram_code_ uint8_t epd_state_handler(void)
     }
     }
     return epd_update_state;
+}
+
+// "Deep clean" the panel to reduce ghosting: cycle full-refresh black/white/
+// red/white, per the panel datasheet's own recommendation (see
+// docs/HINK-E0213A200-A0_Spec_bwr.pdf note 12-3: "the full black and full
+// white picture could be added to clear the screen ... the display effect
+// would be better"). Driven as a small non-blocking state machine (ticked
+// from main_loop(), like everything else EPD-related) instead of a
+// synchronous wait, so it can't starve the watchdog feed or BLE processing
+// for the several seconds a full refresh can take -- see epd_purge_tick().
+RAM uint8_t epd_purge_state = 0; // 0 = idle, 1..4 = phase in progress
+
+void epd_purge_start(void)
+{
+    epd_purge_state = 1;
+}
+
+uint8_t epd_purge_is_active(void)
+{
+    return epd_purge_state != 0;
+}
+
+void epd_purge_tick(void)
+{
+    if (epd_purge_state == 0)
+        return;
+    if (epd_update_state) // previous phase's refresh still in flight, wait
+        return;
+
+    unsigned int size = epd_res_width * epd_res_height / 8;
+    switch (epd_purge_state)
+    {
+    case 1: // full black
+        memset(epd_buffer, 0x00, size);     // BW polarity: 0 = black
+        memset(epd_buffer_red, 0x00, size); // no red
+        EPD_Display(epd_buffer, epd_buffer_red, size, 1);
+        epd_purge_state = 2;
+        break;
+    case 2: // full white
+        memset(epd_buffer, 0xFF, size);     // BW polarity: 1 = white
+        memset(epd_buffer_red, 0x00, size);
+        EPD_Display(epd_buffer, epd_buffer_red, size, 1);
+        epd_purge_state = 3;
+        break;
+    case 3: // full red (white background, red plane fully set)
+        memset(epd_buffer, 0xFF, size);
+        memset(epd_buffer_red, 0xFF, size); // RED polarity: 1 = red, direct
+        EPD_Display(epd_buffer, epd_buffer_red, size, 1);
+        epd_purge_state = 4;
+        break;
+    case 4: // back to blank white, then let the real scene redraw for real
+        memset(epd_buffer, 0xFF, size);
+        memset(epd_buffer_red, 0x00, size);
+        EPD_Display(epd_buffer, epd_buffer_red, size, 1);
+        set_EPD_wait_flush();
+        epd_purge_state = 0;
+        break;
+    }
 }
 
 // invert must be true for the BW plane (panel polarity 1=white/0=black, but
@@ -655,21 +713,18 @@ void epd_display_my(struct date_time _time, uint16_t battery_mv, int16_t tempera
 void epd_myScene(struct date_time _time, uint16_t battery_mv, int16_t temperature, uint8_t full_or_partial) {
 
     epd_clear();
-    memset(epd_temp_red, 0x00, epd_buffer_size);
 
     obdCreateVirtualDisplay(&obd, epd_res_width, epd_res_height, epd_temp);
     obdFill(&obd, 0, 0); // fill with white
-    obdCreateVirtualDisplay(&obd_red, epd_res_width, epd_res_height, epd_temp_red);
-    obdFill(&obd_red, 0, 0); // nothing red until something below sets it
 
     // Calendario
-    drawCalendar(&obd, &obd_red, _time, 0, 0, false);
+    drawCalendar(&obd, _time, 0, 0, false);
 
     // Orologio
     drawClock(&obd, _time, 101, 1);
 
     //Grafico temperatura
-    drawTempGraph(&obd, &obd_red, _time, temperature, 102, 43, false);
+    drawTempGraph(&obd, _time, temperature, 102, 43, false);
 
     char buff[300];
     memset(buff, 0, sizeof(buff));
@@ -689,13 +744,20 @@ void epd_myScene(struct date_time _time, uint16_t battery_mv, int16_t temperatur
     drawBattery(&obd, battery_mv, 242, 96, true);
 
     FixBuffer(epd_temp, epd_buffer, epd_res_width, epd_res_height, true);
-    FixBuffer(epd_temp_red, epd_buffer_red, epd_res_width, epd_res_height, false);
 
-    EPD_Display(epd_buffer, epd_buffer_red, epd_res_width * epd_res_height / 8, full_or_partial);
+    // No red plane here: this panel doesn't keep red content through a
+    // partial refresh (custom LUT: too short a pulse to move the pigment;
+    // the panel's own alternate "Display Mode 2" waveform was tried too and
+    // made partial refreshes stop updating visibly after a few minutes,
+    // worse than the original symptom -- see epd_ssd168x.c). Red is still
+    // used elsewhere (epd_purge_tick's full-refresh anti-ghosting cycle,
+    // and raw BLE image upload), just not in this scene until a real fix is
+    // found.
+    EPD_Display(epd_buffer, NULL, epd_res_width * epd_res_height / 8, full_or_partial);
 
 }
 
-void drawTempGraph(OBDISP *pOBD, OBDISP *pOBDRed, struct date_time _time, int16_t temperature, int tgr_x, int tgr_y, bool draw_placeholder)  {
+void drawTempGraph(OBDISP *pOBD, struct date_time _time, int16_t temperature, int tgr_x, int tgr_y, bool draw_placeholder)  {
     uint8_t day_min=255;
     uint8_t day_max=0;
     uint8_t graph_height=48;
@@ -723,15 +785,24 @@ void drawTempGraph(OBDISP *pOBD, OBDISP *pOBDRed, struct date_time _time, int16_
     // se non trova valori validi (es. subito dopo il boot), allora li imposta a + - 10 rispetto alla temperatura corrente
     if(day_min==255) day_min=temperature-10;
     if(day_max==0) day_max=temperature+10;
+    // se l'escursione storica e' troppo piccola il grafico non avrebbe senso
+    // (praticamente piatto) -> garantisce sempre almeno 10 gradi di scala,
+    // centrati sull'escursione reale.
+    if(day_max-day_min < 10) {
+        uint8_t mid = (uint8_t)((day_max + day_min) / 2);
+        day_min = (mid >= 5) ? (mid - 5) : 0;
+        day_max = day_min + 10;
+    }
     if(day_max<=day_min) day_max=day_min+1; // guardia finale: evita divisione per zero in scaleTemp()
 
     int temp_idx=_time.tm_hour*4+_time.tm_min/15; // indice nel grafico della temperatura: 96 byte, uno ogni 15 minuti
 
     sprintf(buffer, "%d", day_temp[temp_idx]);  // Temperatura al momento
-    // Il colore (ultimo parametro) non seleziona rosso/nero: e' solo
-    // acceso/spento sul piano che gli passi. Per il rosso bisogna scegliere
-    // il piano stesso -- vedi anche drawCalendar().
-    obdWriteStringCustom(day_temp[temp_idx]>=28 ? pOBDRed : pOBD, (GFXfont *)&Special_Elite_Regular_30, tgr_x, tgr_y +24, (char *)buffer, 1);
+    // NB: niente rosso qui apposta -- il rosso non sopravvive al refresh
+    // parziale su questo pannello (vedi epd_myScene/epd_ssd168x.c), quindi
+    // qualunque rosso legato alla temperatura (che puo' cambiare ad ogni
+    // refresh parziale) sbiadirebbe al giro successivo.
+    obdWriteStringCustom(pOBD, (GFXfont *)&Special_Elite_Regular_30, tgr_x, tgr_y +24, (char *)buffer, 1);
     obdScaledString(pOBD, tgr_x+34, tgr_y+2, "o", FONT_8x8, 0, 256, 256, 0);
 
     sprintf(buffer, "G:%d-%d", day_min, day_max); // Minima e massima storica del grafico
@@ -754,8 +825,8 @@ void drawTempGraph(OBDISP *pOBD, OBDISP *pOBDRed, struct date_time _time, int16_
                 }
             }
         }
-        if(day_temp[tx]!=255) // linea della temperatura del giorno corrente, in rosso
-            obdSetPixel(pOBDRed, grx_offset +tx, (tgr_y + graph_height) - scaleTemp(day_temp[tx],day_max,day_min,graph_height), 1, 0);
+        if(day_temp[tx]!=255) // linea della temperatura del giorno corrente
+            obdSetPixel(pOBD, grx_offset +tx, (tgr_y + graph_height) - scaleTemp(day_temp[tx],day_max,day_min,graph_height), 1, 0);
     }
 
 }
@@ -804,7 +875,7 @@ void drawBattery(OBDISP *pOBD, uint16_t battery_mv, int bat_x, int bat_y, bool v
     }
 }
 
-void drawCalendar(OBDISP *pOBD, OBDISP *pOBDRed, struct date_time _time, int cal_x, int cal_y, bool draw_placeholder) {
+void drawCalendar(OBDISP *pOBD, struct date_time _time, int cal_x, int cal_y, bool draw_placeholder) {
     const char *months[] = {"Gen", "Feb", "Mar", "Apr", "Mag", "Giu",
                            "Lug", "Ago", "Set", "Ott", "Nov", "Dic"};
     const char *weekdays[] = {"L", "M", "M", "G", "V", "S", "D"};
@@ -847,7 +918,6 @@ void drawCalendar(OBDISP *pOBD, OBDISP *pOBDRed, struct date_time _time, int cal
     int day = 1;
     int max_days = getDaysInMonth(_time.tm_month, _time.tm_year); // dovrai implementare questa funzione
 
-    struct date_time check_date = _time;
     char *holiday_name = NULL;
     int is_holiday = isHoliday(_time, &holiday_name); // festivita' di OGGI, solo per l'etichetta sotto al calendario
     if(is_holiday) {
@@ -861,16 +931,16 @@ void drawCalendar(OBDISP *pOBD, OBDISP *pOBDRed, struct date_time _time, int cal
             if(current_pos >= first_day && day <= max_days) {
                 sprintf(buffer, "%2d", day);
                 int is_current = (day == _time.tm_day);
-                // Festivita' del giorno SPECIFICO disegnato in questa cella
-                // (non quella di "oggi" calcolata sopra) -> quel giorno va in rosso.
-                check_date.tm_day = day;
-                int day_is_holiday = isHoliday(check_date, NULL);
-                OBDISP *pOBDDay = day_is_holiday ? pOBDRed : pOBD;
+                // Le festivita'/domeniche non sono piu' evidenziate in rosso:
+                // il rosso non sopravvive al refresh parziale su questo
+                // pannello (vedi epd_ssd168x.c), quindi il calendario usa
+                // solo il piano nero per restare corretto anche tra un full
+                // refresh e l'altro.
                 if (is_current) {
-                    obdDrawLine(pOBDDay, cal_x + (col * cell_width) +1, cal_y + 13 + (row * cell_height), cal_x + ((col + 1) * cell_width) -2, cal_y + 13 + (row * cell_height), 1, 0);
-                    obdDrawLine(pOBDDay, cal_x + ((col + 1) * cell_width) -2, cal_y + 13 + (row * cell_height), cal_x + ((col + 1) * cell_width) -2, cal_y + 13 + ((row+1) * cell_height), 1, 0);
+                    obdDrawLine(pOBD, cal_x + (col * cell_width) +1, cal_y + 13 + (row * cell_height), cal_x + ((col + 1) * cell_width) -2, cal_y + 13 + (row * cell_height), 1, 0);
+                    obdDrawLine(pOBD, cal_x + ((col + 1) * cell_width) -2, cal_y + 13 + (row * cell_height), cal_x + ((col + 1) * cell_width) -2, cal_y + 13 + ((row+1) * cell_height), 1, 0);
                 }
-                obdScaledString(pOBDDay, cal_x + (col * cell_width) +1, cal_y + 14 + (row * cell_height), buffer, FONT_6x8, is_current, 256, 256, 0);
+                obdScaledString(pOBD, cal_x + (col * cell_width) +1, cal_y + 14 + (row * cell_height), buffer, FONT_6x8, is_current, 256, 256, 0);
                 day++;
             }
         }

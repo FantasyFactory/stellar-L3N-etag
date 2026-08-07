@@ -118,7 +118,10 @@ _attribute_ram_code_ void main_loop(void)
         set_air_tag_adv_data();
     }
 
-    epd_update(get_time(), battery_mv, temperature); //RECE
+    if (epd_purge_is_active())
+        epd_purge_tick(); // deep-clean cycle in progress -- don't let the normal scene compete for the display
+    else
+        epd_update(get_time(), battery_mv, temperature); //RECE
 
     if (time_reached_period(Timer_CH_0, 10))
     {

@@ -11,6 +11,17 @@
 // epd_bwr_213.c / epd_bwr_154.c / epd_bwr_296.c (byte-for-byte, only the
 // #define'd length marker name differed). epd_bw_213_ice.c uses a
 // differently-shaped LUT and is not covered by this generic driver.
+//
+// Structurally this is a single short voltage pulse (everything else in the
+// table is 0x00) -- fine for a fast B/W-only bistable flip, but too short to
+// move the red pigment, which is why red content fades on a partial refresh
+// with this LUT. Tried replacing it with the panel's own OTP "Display Mode
+// 2" waveform (cmd 0x22 codes 0xB9/0xCF) as an experiment: on real hardware
+// that made partial refreshes stop visibly updating the panel at all after
+// a few minutes (worse than the known "red fades" limitation), so it was
+// reverted. Back to this LUT until a real fix is found -- see epd_myScene()
+// for why red is no longer used in the calendar scene at all in the
+// meantime.
 #define SSD168x_LUT_LEN 50
 static uint8_t ssd168x_lut_partial[] = {
     0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,

@@ -83,6 +83,9 @@ void cmd_parser(void * p){
 	else if(inData == 0xE2){// force set an EPD scene
 		set_EPD_wait_flush();
 	}
+	else if(inData == 0xE3){// deep-clean the panel (black/white/red/white full refresh cycle), reduces ghosting
+		epd_purge_start();
+	}
 	else if(inData == 0x80){// switch off led
 		set_led_color(0);
 	}

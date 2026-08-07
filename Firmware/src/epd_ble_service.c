@@ -18,6 +18,16 @@ extern uint8_t epd_temp[epd_buffer_size];
 extern uint8_t epd_buffer[epd_buffer_size];
 unsigned int byte_pos = 0;
 
+// epd_temp is ALSO the scene-drawing pipeline's black-plane scratch buffer
+// (epd.c, un-rotated OneBitDisplay staging area) -- it gets clobbered with
+// unrelated leftover content by every normal clock scene redraw. Only trust
+// it as real red-plane data here if THIS protocol actually wrote into it
+// (case 0x03, payload[1] != 0xff) since the last clear (case 0x00); otherwise
+// pushing (case 0x01) would send whatever stale scene-drawing garbage happens
+// to be sitting there, misinterpreted as a red bitmap -- exactly the garbled
+// red streaks seen when "push" was sent without a prior clear+upload.
+static uint8_t red_plane_dirty = 0;
+
 int epd_ble_handle_write(void *p)
 {
 	rf_packet_att_write_t *req = (rf_packet_att_write_t *)p;
@@ -34,6 +44,7 @@ int epd_ble_handle_write(void *p)
 	    ASSERT_MIN_LEN(payload_len, 2);
 		memset(epd_buffer, payload[1], epd_buffer_size);
 		memset(epd_temp, payload[1], epd_buffer_size);
+		red_plane_dirty = 0;
 		ble_set_connection_speed(40);
 		return 0;
 	// Push buffer to display.
@@ -44,7 +55,7 @@ int epd_ble_handle_write(void *p)
 		// panel/296px): telling the controller to load more bytes than its
 		// own RAM window (see epd_ssd168x.c) desyncs the SPI protocol and
 		// hangs, which is exactly what "Clear Screen" was doing before.
-		EPD_Display(epd_buffer, epd_temp, epd_res_width * epd_res_height / 8, payload[1]);
+		EPD_Display(epd_buffer, red_plane_dirty ? epd_temp : NULL, epd_res_width * epd_res_height / 8, payload[1]);
 		return 0;
 	// Set byte_pos.
 	case 0x02:
@@ -64,6 +75,7 @@ int epd_ble_handle_write(void *p)
 		    memcpy(epd_buffer + (payload[2] << 8 | payload[3]), payload + 4, payload_len - 4);
 		} else {
 		    memcpy(epd_temp + (payload[2] << 8 | payload[3]), payload + 4, payload_len - 4);
+		    red_plane_dirty = 1;
 		}
 
 		out_buffer[0] = payload_len >> 8;
