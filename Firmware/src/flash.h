@@ -14,6 +14,7 @@ typedef struct Settings_struct
 	int8_t temp_offset;
 	uint8_t temp_alarm_point;//divide by ten for value
 	uint8_t epd_profile;//selected EPD driver id (see epd_drivers[] in epd.c), persists set_EPD_model()
+	uint8_t debug_log_enabled;//see debug_log.h -- persisted so boot-time diagnostics get captured too
 	uint8_t crc;// Needs to be at the last position otherwise the settings can not be validated on next boot!!!!
 } settings_struct;
 

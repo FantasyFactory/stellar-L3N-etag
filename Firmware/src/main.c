@@ -80,7 +80,11 @@ _attribute_ram_code_ int main (void)    //must run in ramcode
 		
 	if( deepRetWakeUp ){
 		user_init_deepRetn ();
-		printf("\r\n\r\n\r\nBooting deep\r\n\r\n\r\n\r\n");
+		// No log line here on purpose: this runs on every single wake from
+		// the routine deep-sleep-with-retention cycle (i.e. very often, by
+		// design -- see blt_pm_proc() in ble.c), not just on anomalies.
+		// Logging it would just flood the fixed-size dbg log ring buffer
+		// with nothing but this line, evicting anything actually useful.
 	}
 	else{
 		printf("\r\n\r\n\r\nBooting\r\n\r\n\r\n\r\n");

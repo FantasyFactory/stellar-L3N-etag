@@ -51,7 +51,9 @@
 #include <stdarg.h>
 
 #include "drivers.h"
+#include "debug_log.h"
 extern int putchar(int c);
+extern void puts(const char *str); // see uart.h for why this isn't declared there
 static void printchar(char **str, int c) {
 	if (str) {
 		**str = c;
@@ -214,7 +216,8 @@ int u_printf(const char *format, ...) {
 	va_list args;
 	va_start(args, format );
 	print(&out, format, args);
-	//puts(my_printf_buff);
+	puts(my_printf_buff);
+	dbg_log_write(my_printf_buff);
 	return 0;
 }
 

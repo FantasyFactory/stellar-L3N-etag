@@ -14,6 +14,7 @@
 #include "epd.h"
 #include "etime.h"
 #include "bart_tif.h"
+#include "debug_log.h"
 
 RAM uint8_t battery_level;
 RAM uint16_t battery_mv;
@@ -30,6 +31,25 @@ _attribute_ram_code_ void inc_UART_RX_Counter(int r)
 }
 #endif
 
+// Provided by static_src/boot.link. There's no heap/RTOS on this build (the
+// FreeRTOS component is linked in but no task/scheduler is ever started --
+// this firmware is a bare superloop, see main.c), so the only meaningful
+// "memory status" we can report is the static footprint the linker already
+// computed: how much of the 32K deep-sleep-retention SRAM budget is used
+// (blc_pm_setDeepsleepRetentionType(..._LOW32K) in ble.c), and how much
+// non-retained scratch RAM (.bss) the rest of the firmware needs while awake.
+extern uint8_t _retention_data_start_[];
+extern uint8_t _retention_data_end_[];
+extern uint8_t _start_bss_[];
+extern uint8_t _end_bss_[];
+
+static void log_meminfo(void)
+{
+    unsigned int retention_bytes = (unsigned int)(_retention_data_end_ - _retention_data_start_);
+    unsigned int bss_bytes = (unsigned int)(_end_bss_ - _start_bss_);
+    printf("[MEM] retention=%d/32768B bss=%dB\r\n", retention_bytes, bss_bytes);
+}
+
 _attribute_ram_code_ void user_init_normal(void)
 {                            // this will get executed one time after power up
     random_generator_init(); // must
@@ -41,6 +61,13 @@ _attribute_ram_code_ void user_init_normal(void)
     init_nfc();
 #endif
     init_flash();
+    // OR, not assign: a debug build's hardcoded default in debug_log.c
+    // should not be clobbered back off just because it was never (yet)
+    // persisted via BLE cmd 0xE8+0xDF -- only the persisted setting being
+    // *on* can turn logging on here, it never turns it off.
+    if (settings.debug_log_enabled)
+        dbg_log_set_enabled(1);
+    log_meminfo();
     // epd_display_tiff((uint8_t *)bart_tif, sizeof(bart_tif));
     // epd_display(3334533);
 }

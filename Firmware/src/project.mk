@@ -6,6 +6,7 @@ $(OUT_PATH)/ble.o \
 $(OUT_PATH)/epd_ble_service.o \
 $(OUT_PATH)/i2c.o \
 $(OUT_PATH)/cmd_parser.o \
+$(OUT_PATH)/debug_log.o \
 $(OUT_PATH)/flash.o \
 $(OUT_PATH)/etime.o \
 $(OUT_PATH)/epd_spi.o \

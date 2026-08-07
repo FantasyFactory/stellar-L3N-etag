@@ -34,6 +34,7 @@ static int find_wrap_point(const char *str, int max_chars);
 int calculate_optimal_layout(const char *text, int display_width, int display_height, LayoutResult *result);
 void draw_optimized_text(OBDISP *pOBD, const char *text, int display_x, int display_y, int display_width, int display_height, int bInvert);
 
+void set_EPD_model(uint8_t model_nr);
 void set_EPD_scene(uint8_t scene);
 void set_EPD_wait_flush();
 

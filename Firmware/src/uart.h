@@ -3,6 +3,12 @@
 
 #include <stdint.h>
 void init_uart(void);
+int putchar_custom(int c);
+// puts() is intentionally NOT declared here: GCC treats it as a built-in
+// (int puts(const char*)) and our uart.c version returns void, so declaring
+// it in a widely-included header spams a "conflicting types" warning into
+// every file that includes uart.h. Callers that need it (currently only
+// u_printf.c) declare it locally instead.
 
 #if defined EXP_UART
 #define UART_BUFF_SIZE 512

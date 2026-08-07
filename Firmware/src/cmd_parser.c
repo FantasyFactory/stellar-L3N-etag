@@ -7,13 +7,25 @@
 
 #include "etime.h"
 #include "flash.h"
+#include "debug_log.h"
 
 extern settings_struct settings;
+
+// Chunk size for the 0xE9 diagnostic log read-back: kept at the same 20
+// bytes already used for the OTA verify read-back (ota.c) since that's
+// known to fit a default BLE ATT payload without needing an MTU exchange.
+#define DBG_LOG_CHUNK_MAX 18
 
 #define testPin GPIO_PD3
 void cmd_parser(void * p){
 	rf_packet_att_data_t *req = (rf_packet_att_data_t*)p;
 	uint8_t inData = req->dat[0];
+	// 0xE8/0xE9/0xEA (diagnostic log enable/read/clear) are deliberately
+	// excluded here: logging the 0xE9 "read next chunk" command feeds back
+	// into the very buffer it's reading, so a download would never reach
+	// "0 bytes remaining" -- the log kept growing by one entry per chunk.
+	if (inData != 0xE8 && inData != 0xE9 && inData != 0xEA)
+		printf("[CMD] 0x%x 0x%x 0x%x\r\n", inData, req->dat[1], req->dat[2]);
 	if(inData == 0xFF){
 	gpio_set_func(testPin, AS_GPIO);
 	gpio_set_output_en(testPin, 1);
@@ -76,5 +88,20 @@ void cmd_parser(void * p){
 	}
 	else if(inData == 0x81){// switch ON led
 		set_led_color(req->dat[1]);
+	}
+	else if(inData == 0xE8){// enable/disable diagnostic log capture (persisted)
+		settings.debug_log_enabled = req->dat[1] ? 1 : 0;
+		dbg_log_set_enabled(settings.debug_log_enabled);
+	}
+	else if(inData == 0xE9){// read next diagnostic log chunk (response via notify on this same characteristic)
+		uint8_t out_buffer[2 + DBG_LOG_CHUNK_MAX];
+		uint32_t remaining = 0;
+		uint8_t n = dbg_log_read_chunk(&out_buffer[2], DBG_LOG_CHUNK_MAX, &remaining);
+		out_buffer[0] = (remaining >> 8) & 0xff; // remaining is capped at DBG_LOG_SIZE (2048), fits 16 bits
+		out_buffer[1] = remaining & 0xff;
+		bls_att_pushNotifyData(RxTx_CMD_OUT_DP_H, out_buffer, 2 + n);
+	}
+	else if(inData == 0xEA){// clear diagnostic log
+		dbg_log_clear();
 	}
 }

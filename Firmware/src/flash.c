@@ -38,6 +38,7 @@ void reset_settings_to_default(void)
 	settings.temp_offset = 0;
 	settings.temp_alarm_point = 5;
 	settings.epd_profile = 2; // HINK-E0213A200 (our confirmed panel), see epd_drivers[] in epd.c
+	settings.debug_log_enabled = 0; // off by default, costs cycles on every printf() when on
 }
 
 void save_settings_to_flash(void)
