@@ -634,10 +634,10 @@ void epd_display_info(struct date_time _time, uint16_t battery_mv, int16_t tempe
     int t_whole = traw / 256;           // truncates toward zero -> sign lands here
     int t_frac = traw % 256;
     if (t_frac < 0) t_frac = -t_frac;
-    sprintf(buff, "--%d.%01d'C--%dx%d--", t_whole, (t_frac * 10) / 256, resolution_w, resolution_h);
+    sprintf(buff, "%d.%01d'C (%dx%d)", t_whole, (t_frac * 10) / 256, resolution_w, resolution_h);
     obdWriteStringCustom(&obd, (GFXfont *)&Special_Elite_Regular_30, 10, 95, (char *)buff, 1);
     sprintf(buff, "Battery %dmV  %d%%", battery_mv, battery_level);
-    obdWriteStringCustom(&obd, (GFXfont *)&Dialog_plain_16, 10, 120, (char *)buff, 1);
+    obdWriteStringCustom(&obd, (GFXfont *)&Dialog_plain_16, 0, 120, (char *)buff, 1);
     FixBuffer(epd_temp, epd_buffer, resolution_w, resolution_h, true);
     EPD_Display(epd_buffer, NULL, resolution_w * resolution_h / 8, full_or_partial);
 }
@@ -938,7 +938,7 @@ void drawCalendar(OBDISP *pOBD, struct date_time _time, int cal_x, int cal_y, bo
                 // refresh e l'altro.
                 if (is_current) {
                     obdDrawLine(pOBD, cal_x + (col * cell_width) +1, cal_y + 13 + (row * cell_height), cal_x + ((col + 1) * cell_width) -2, cal_y + 13 + (row * cell_height), 1, 0);
-                    obdDrawLine(pOBD, cal_x + ((col + 1) * cell_width) -2, cal_y + 13 + (row * cell_height), cal_x + ((col + 1) * cell_width) -2, cal_y + 13 + ((row+1) * cell_height), 1, 0);
+                    obdDrawLine(pOBD, cal_x + ((col + 1) * cell_width), cal_y + 13 + (row * cell_height), cal_x + ((col + 1) * cell_width), cal_y + 12 + ((row+1) * cell_height), 1, 0);
                 }
                 obdScaledString(pOBD, cal_x + (col * cell_width) +1, cal_y + 14 + (row * cell_height), buffer, FONT_6x8, is_current, 256, 256, 0);
                 day++;

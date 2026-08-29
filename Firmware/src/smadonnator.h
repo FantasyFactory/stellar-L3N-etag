@@ -51,8 +51,8 @@ const char *sorti[]={
         "inculato con l'albero di natale","inculato col crocifisso",
         "messo nel presepe al posto dell'asinello",
         "venduto su temu","costretto a sputare controvento",
-        "talmente stupido da essere deriso", "contromano in tangenziale",
-        "che si da fuoco come un bonzo", "che sfila al gay pride"
+        "talmente stupido da essere deriso", "contromano in tangenziale invitato",
+        "che si da fuoco come un bonzo acceso", "che sfila al gay pride mandato"
     };
 static int sorti_size = sizeof(sorti) / sizeof(sorti[0]);
 
