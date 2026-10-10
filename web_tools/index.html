@@ -220,6 +220,75 @@
 			flex-shrink: 0;
 		}
 
+		button:disabled {
+			background: #8bb9ec;
+			cursor: wait;
+		}
+
+		#temp-hist-canvas {
+			display: block;
+			width: 100%;
+			height: 280px;
+			margin-top: 10px;
+			touch-action: pan-y;
+		}
+
+		.th-progress {
+			height: 6px;
+			background: #e9ecef;
+			border-radius: 3px;
+			overflow: hidden;
+			margin-top: 5px;
+		}
+
+		#th-progress-bar {
+			height: 100%;
+			width: 0;
+			background: #007bff;
+			transition: width 0.2s;
+		}
+
+		.th-progress-text {
+			font-size: 0.85em;
+			color: #666;
+			margin: 4px 0 8px 0;
+		}
+
+		.th-stats {
+			display: grid;
+			grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+			gap: 10px;
+		}
+
+		.th-stats .sensor-reading {
+			margin: 0;
+			padding: 10px;
+		}
+
+		.th-value {
+			font-size: 1.3em;
+			font-weight: bold;
+			color: #007bff;
+			margin-top: 4px;
+		}
+
+		.th-legend {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 14px;
+			font-size: 0.85em;
+			color: #555;
+			margin-top: 6px;
+		}
+
+		.th-legend i {
+			display: inline-block;
+			width: 16px;
+			height: 3px;
+			margin-right: 5px;
+			vertical-align: middle;
+		}
+
 		@media (max-width: 600px) {
 			body {
 				padding: 5px;
@@ -692,13 +761,23 @@
 
 			await rxtxCharacteristic.startNotifications();
 			rxtxCharacteristic.addEventListener('characteristicvaluechanged', (event) => {
-				// Currently the only thing that talks back on this characteristic
-				// is the diagnostic log read-back (cmd 0xE9). If that ever grows
-				// more responses, they'll need a tag byte to tell them apart.
+				// Two things talk back on this characteristic: the temperature
+				// history read-back (cmd 0xEB, tagged with 0xEB in byte 0) and the
+				// diagnostic log read-back (cmd 0xE9, untagged -- its byte 0 is the
+				// high byte of "remaining", at most 0x04, so it can't look like 0xEB).
+				const bytes = new Uint8Array(event.target.value.buffer);
+				if (bytes.length > 0 && bytes[0] === 0xEB) {
+					if (tempHistNotifyResolver) {
+						const resolve = tempHistNotifyResolver;
+						tempHistNotifyResolver = null;
+						resolve(bytes);
+					}
+					return;
+				}
 				if (diagLogNotifyResolver) {
 					const resolve = diagLogNotifyResolver;
 					diagLogNotifyResolver = null;
-					resolve(new Uint8Array(event.target.value.buffer));
+					resolve(bytes);
 				}
 			});
 		}
@@ -756,6 +835,323 @@
 				addLog('Diagnostic log download failed: ' + e.message);
 			}
 		}
+
+		// ========== Storico temperature (cmd 0xEB) ==========
+		// Same data as drawTempGraph() on the device: 3 arrays of 96 slots (one
+		// every 15 minutes, index = hour*4 + min/15), whole degrees C.
+		// min_temp/max_temp = historical min/max seen in that time slot (all
+		// days since boot), day_temp = last reading in that slot. day_temp is a
+		// rolling 24h buffer: slots up to the current one are today, the ones
+		// after it still hold yesterday's values.
+		// Firmware "no data" sentinels: min=255, max=0, day=255.
+		const TH_SLOTS = 96;
+		const TH_CHUNK = 16;
+		// day first: it's the most meaningful line, so the user sees it early
+		const TH_PARTS = [
+			{ id: 2, key: 'day', empty: 255 },
+			{ id: 0, key: 'min', empty: 255 },
+			{ id: 1, key: 'max', empty: 0 },
+		];
+		let tempHistNotifyResolver = null;
+		let tempHistBusy = false;
+		let tempHist = newTempHist();
+		let tempHistHover = null;
+
+		function newTempHist() {
+			return {
+				min: new Array(TH_SLOTS).fill(null),
+				max: new Array(TH_SLOTS).fill(null),
+				day: new Array(TH_SLOTS).fill(null),
+				idx: null,
+				done: 0,
+				total: TH_PARTS.length * Math.ceil(TH_SLOTS / TH_CHUNK),
+			};
+		}
+
+		function waitForTempHistNotify(timeoutMs = 3000) {
+			return new Promise((resolve, reject) => {
+				const timer = setTimeout(() => {
+					tempHistNotifyResolver = null;
+					reject(new Error('Timed out waiting for device response'));
+				}, timeoutMs);
+				tempHistNotifyResolver = (bytes) => {
+					clearTimeout(timer);
+					resolve(bytes);
+				};
+			});
+		}
+
+		async function readTempHistChunk(partId, offset) {
+			const hex = (v) => v.toString(16).padStart(2, '0');
+			let lastErr;
+			for (let attempt = 0; attempt < 3; attempt++) {
+				try {
+					const notifyPromise = waitForTempHistNotify();
+					await rxTxSendCommand(hexToBytes('eb' + hex(partId) + hex(offset)));
+					const bytes = await notifyPromise;
+					if (bytes.length < 4 || bytes[1] !== partId || bytes[2] !== offset)
+						throw new Error('unexpected response ' + bytesToHex(bytes));
+					return bytes;
+				} catch (e) {
+					tempHistNotifyResolver = null;
+					lastErr = e;
+				}
+			}
+			throw lastErr;
+		}
+
+		async function downloadTempHistory() {
+			if (!rxtxCharacteristic) {
+				addLog('RxTx service unavailable. Is the Bluetooth connection established?');
+				return;
+			}
+			if (tempHistBusy) return;
+			tempHistBusy = true;
+			const btn = document.getElementById('temp-hist-btn');
+			btn.disabled = true;
+			tempHist = newTempHist();
+			tempHistHover = null;
+			drawTempHistory();
+			addLog('Downloading temperature history...');
+			const startTime = Date.now();
+			try {
+				for (const part of TH_PARTS) {
+					for (let offset = 0; offset < TH_SLOTS; offset += TH_CHUNK) {
+						const bytes = await readTempHistChunk(part.id, offset);
+						tempHist.idx = bytes[3];
+						const values = bytes.slice(4);
+						for (let i = 0; i < values.length && offset + i < TH_SLOTS; i++)
+							tempHist[part.key][offset + i] = values[i] === part.empty ? null : values[i];
+						tempHist.done++;
+						drawTempHistory(); // refresh on every chunk: visible progress during the ~5-9s download
+					}
+				}
+				addLog(`Temperature history downloaded in ${((Date.now() - startTime) / 1000).toFixed(1)}s.`);
+			} catch (e) {
+				addLog('Temperature history download failed: ' + e.message);
+			} finally {
+				tempHistBusy = false;
+				btn.disabled = false;
+				drawTempHistory();
+			}
+		}
+
+		function slotLabel(slot) {
+			const h = Math.floor(slot / 4), m = (slot % 4) * 15;
+			const end = slot + 1;
+			const h2 = Math.floor(end / 4) % 24, m2 = (end % 4) * 15;
+			const p = (v) => String(v).padStart(2, '0');
+			return `${p(h)}:${p(m)}–${p(h2)}:${p(m2)}`;
+		}
+
+		function tempHistStats() {
+			const t = tempHist;
+			const valid = (a) => a.filter((v) => v !== null);
+			const mins = valid(t.min), maxs = valid(t.max);
+			const today = t.idx === null ? [] : valid(t.day.slice(0, t.idx + 1));
+			return {
+				now: t.idx !== null ? t.day[t.idx] : null,
+				todayMin: today.length ? Math.min(...today) : null,
+				todayMax: today.length ? Math.max(...today) : null,
+				allMin: mins.length ? Math.min(...mins) : null,
+				allMax: maxs.length ? Math.max(...maxs) : null,
+				slotMin: t.idx !== null ? t.min[t.idx] : null,
+				slotMax: t.idx !== null ? t.max[t.idx] : null,
+			};
+		}
+
+		function updateTempHistInfo() {
+			const s = tempHistStats();
+			const fmt = (v) => (v === null ? '--' : v + '°');
+			const range = (a, b) => (a === null && b === null ? '--' : `${fmt(a)} / ${fmt(b)}`);
+			document.getElementById('th-now').textContent = fmt(s.now);
+			document.getElementById('th-today').textContent = range(s.todayMin, s.todayMax);
+			document.getElementById('th-all').textContent = range(s.allMin, s.allMax);
+			document.getElementById('th-slot').textContent = range(s.slotMin, s.slotMax);
+			const pct = Math.round((tempHist.done / tempHist.total) * 100);
+			document.getElementById('th-progress-bar').style.width = pct + '%';
+			document.getElementById('th-progress-text').textContent = tempHistBusy
+				? `Download ${tempHist.done}/${tempHist.total} blocchi (${pct}%)`
+				: tempHist.done === 0 ? 'Nessun dato scaricato'
+				: tempHist.done < tempHist.total ? `Download interrotto: ${tempHist.done}/${tempHist.total} blocchi`
+				: `Completo — slot corrente ${slotLabel(tempHist.idx)}`;
+		}
+
+		function drawTempHistory() {
+			updateTempHistInfo();
+			const canvas = document.getElementById('temp-hist-canvas');
+			const ctx = canvas.getContext('2d');
+			const dpr = window.devicePixelRatio || 1;
+			const cssW = canvas.clientWidth, cssH = canvas.clientHeight;
+			if (canvas.width !== Math.round(cssW * dpr) || canvas.height !== Math.round(cssH * dpr)) {
+				canvas.width = Math.round(cssW * dpr);
+				canvas.height = Math.round(cssH * dpr);
+			}
+			ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+			ctx.clearRect(0, 0, cssW, cssH);
+
+			const t = tempHist;
+			const pad = { l: 38, r: 10, t: 12, b: 26 };
+			const w = cssW - pad.l - pad.r, h = cssH - pad.t - pad.b;
+			const slotW = w / TH_SLOTS;
+			const xOf = (slot) => pad.l + slot * slotW;
+
+			const all = [...t.min, ...t.max, ...t.day].filter((v) => v !== null);
+			ctx.font = '11px -apple-system, Segoe UI, Roboto, sans-serif';
+			ctx.textBaseline = 'middle';
+			if (all.length === 0) {
+				ctx.fillStyle = '#999';
+				ctx.textAlign = 'center';
+				ctx.fillText(tempHistBusy ? 'Download in corso…' : 'Premi "Scarica" per leggere lo storico dal dispositivo', cssW / 2, cssH / 2);
+				return;
+			}
+
+			// Y scale: data range + 1 degree of headroom, at least 6 degrees tall
+			let lo = Math.min(...all) - 1, hi = Math.max(...all) + 1;
+			if (hi - lo < 6) {
+				const mid = (hi + lo) / 2;
+				lo = Math.floor(mid - 3);
+				hi = lo + 6;
+			}
+			const yOf = (v) => pad.t + h - ((v - lo) / (hi - lo)) * h;
+
+			// horizontal grid + Y labels
+			const span = hi - lo;
+			const step = span <= 12 ? 1 : span <= 24 ? 2 : 5;
+			ctx.textAlign = 'right';
+			for (let v = Math.ceil(lo / step) * step; v <= hi; v += step) {
+				const y = Math.round(yOf(v)) + 0.5;
+				ctx.strokeStyle = v % (step * 2) === 0 ? '#e3e3e3' : '#f1f1f1';
+				ctx.lineWidth = 1;
+				ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(pad.l + w, y); ctx.stroke();
+				ctx.fillStyle = '#777';
+				ctx.fillText(v + '°', pad.l - 5, y);
+			}
+
+			// vertical grid + X labels (every 3h)
+			ctx.textAlign = 'center';
+			ctx.textBaseline = 'top';
+			for (let hr = 0; hr <= 24; hr += 3) {
+				const x = Math.round(xOf(hr * 4)) + 0.5;
+				ctx.strokeStyle = '#ececec';
+				ctx.beginPath(); ctx.moveTo(x, pad.t); ctx.lineTo(x, pad.t + h); ctx.stroke();
+				ctx.fillStyle = '#777';
+				ctx.fillText(String(hr).padStart(2, '0'), x, pad.t + h + 6);
+			}
+
+			// historical min/max band per slot
+			ctx.fillStyle = 'rgba(0, 123, 255, 0.20)';
+			for (let i = 0; i < TH_SLOTS; i++) {
+				if (t.min[i] === null || t.max[i] === null) continue;
+				const yTop = yOf(t.max[i]), yBot = yOf(t.min[i]);
+				const bh = Math.max(3, yBot - yTop);
+				ctx.fillRect(xOf(i) + 0.5, (yTop + yBot) / 2 - bh / 2, Math.max(1, slotW - 1), bh);
+			}
+
+			// day_temp line: today (slots 0..idx) solid, yesterday (after idx) dashed
+			const drawDaySegment = (from, to, style, dash) => {
+				ctx.strokeStyle = style;
+				ctx.lineWidth = 2;
+				ctx.setLineDash(dash);
+				ctx.lineJoin = 'round';
+				ctx.beginPath();
+				let penDown = false;
+				for (let i = from; i <= to; i++) {
+					const v = t.day[i];
+					if (v === null) { penDown = false; continue; }
+					const x = xOf(i + 0.5), y = yOf(v);
+					if (penDown) ctx.lineTo(x, y); else ctx.moveTo(x, y);
+					penDown = true;
+				}
+				ctx.stroke();
+				ctx.setLineDash([]);
+			};
+			const idx = t.idx === null ? TH_SLOTS - 1 : t.idx;
+			if (idx < TH_SLOTS - 1) drawDaySegment(idx + 1, TH_SLOTS - 1, '#aaa', [4, 3]);
+			drawDaySegment(0, idx, '#dc3545', []);
+
+			// "now" marker
+			if (t.idx !== null) {
+				const x = Math.round(xOf(t.idx + 0.5)) + 0.5;
+				ctx.strokeStyle = '#fd7e14';
+				ctx.lineWidth = 1;
+				ctx.setLineDash([2, 2]);
+				ctx.beginPath(); ctx.moveTo(x, pad.t); ctx.lineTo(x, pad.t + h); ctx.stroke();
+				ctx.setLineDash([]);
+				if (t.day[t.idx] !== null) {
+					ctx.fillStyle = '#dc3545';
+					ctx.beginPath(); ctx.arc(xOf(t.idx + 0.5), yOf(t.day[t.idx]), 4, 0, 2 * Math.PI); ctx.fill();
+				}
+			}
+
+			// hover highlight + tooltip
+			if (tempHistHover !== null) {
+				const i = tempHistHover;
+				ctx.fillStyle = 'rgba(0, 0, 0, 0.06)';
+				ctx.fillRect(xOf(i), pad.t, slotW, h);
+				const isToday = t.idx === null || i <= t.idx;
+				const fmt = (v) => (v === null ? '--' : v + '°C');
+				const lines = [
+					`${slotLabel(i)} (${isToday ? 'oggi' : 'ieri'})`,
+					`Valore: ${fmt(t.day[i])}`,
+					`Min/max storici: ${t.min[i] === null ? '--' : t.min[i]}–${fmt(t.max[i])}`,
+				];
+				ctx.font = '12px -apple-system, Segoe UI, Roboto, sans-serif';
+				const boxW = Math.max(...lines.map((s) => ctx.measureText(s).width)) + 16;
+				const boxH = lines.length * 16 + 10;
+				let bx = xOf(i + 0.5) + 10;
+				if (bx + boxW > cssW - 2) bx = xOf(i + 0.5) - 10 - boxW;
+				const by = pad.t + 4;
+				ctx.fillStyle = 'rgba(33, 37, 41, 0.92)';
+				ctx.beginPath();
+				if (ctx.roundRect) ctx.roundRect(bx, by, boxW, boxH, 6); else ctx.rect(bx, by, boxW, boxH);
+				ctx.fill();
+				ctx.fillStyle = '#fff';
+				ctx.textAlign = 'left';
+				ctx.textBaseline = 'top';
+				lines.forEach((s, k) => ctx.fillText(s, bx + 8, by + 6 + k * 16));
+			}
+		}
+
+		function tempHistPointer(e) {
+			const canvas = document.getElementById('temp-hist-canvas');
+			const rect = canvas.getBoundingClientRect();
+			const w = rect.width - 38 - 10;
+			const slot = Math.floor(((e.clientX - rect.left - 38) / w) * TH_SLOTS);
+			const next = slot >= 0 && slot < TH_SLOTS ? slot : null;
+			if (next !== tempHistHover) {
+				tempHistHover = next;
+				drawTempHistory();
+			}
+		}
+
+		function exportTempHistoryCsv() {
+			if (tempHist.done === 0) {
+				addLog('Nothing to export: download the temperature history first.');
+				return;
+			}
+			const rows = ['slot;ora;min_storico;max_storico;valore;giorno'];
+			const cell = (v) => (v === null ? '' : v);
+			for (let i = 0; i < TH_SLOTS; i++) {
+				const day = tempHist.idx === null ? '' : i <= tempHist.idx ? 'oggi' : 'ieri';
+				rows.push([i, slotLabel(i), cell(tempHist.min[i]), cell(tempHist.max[i]), cell(tempHist.day[i]), day].join(';'));
+			}
+			const blob = new Blob([rows.join('\r\n')], { type: 'text/csv' });
+			const a = document.createElement('a');
+			a.href = URL.createObjectURL(blob);
+			a.download = 'storico_temperature_' + new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-') + '.csv';
+			a.click();
+			URL.revokeObjectURL(a.href);
+		}
+
+		window.addEventListener('resize', () => drawTempHistory());
+		window.addEventListener('load', () => {
+			const canvas = document.getElementById('temp-hist-canvas');
+			canvas.addEventListener('pointermove', tempHistPointer);
+			canvas.addEventListener('pointerdown', tempHistPointer);
+			canvas.addEventListener('pointerleave', () => { tempHistHover = null; drawTempHistory(); });
+			drawTempHistory();
+		});
 
 		async function reConnect() {
 			connectTrys = 0;
@@ -1286,6 +1682,31 @@
 				<div class="sensor-label">Batteria</div>
 				<div class="sensor-value" id="battery-value">--</div>
 			</div>
+		</div>
+	</div>
+
+	<!-- Temperature History Section -->
+	<div class="section">
+		<h2>Storico Temperature</h2>
+		<p style="color:#666; font-size:0.9em; margin-bottom:10px;">Lo stesso storico del grafico sul display: uno slot ogni 15 minuti sulle 24 ore. La linea rossa &egrave; oggi, quella grigia tratteggiata &egrave; ieri (slot non ancora sovrascritti), la banda azzurra &egrave; il min/max storico di ogni fascia oraria dall'ultimo riavvio.</p>
+		<div class="button-group">
+			<button id="temp-hist-btn" onclick="downloadTempHistory()">Scarica</button>
+			<button onclick="exportTempHistoryCsv()">Esporta CSV</button>
+		</div>
+		<div class="th-progress"><div id="th-progress-bar"></div></div>
+		<div id="th-progress-text" class="th-progress-text"></div>
+		<div class="th-stats">
+			<div class="sensor-reading"><div class="sensor-label">Attuale</div><div class="th-value" id="th-now">--</div></div>
+			<div class="sensor-reading"><div class="sensor-label">Oggi min / max</div><div class="th-value" id="th-today">--</div></div>
+			<div class="sensor-reading"><div class="sensor-label">Storico min / max</div><div class="th-value" id="th-all">--</div></div>
+			<div class="sensor-reading"><div class="sensor-label">Questa fascia</div><div class="th-value" id="th-slot">--</div></div>
+		</div>
+		<canvas id="temp-hist-canvas"></canvas>
+		<div class="th-legend">
+			<span><i style="background:#dc3545"></i>Oggi</span>
+			<span><i style="background:#aaa"></i>Ieri</span>
+			<span><i style="background:rgba(0,123,255,0.35); height:10px"></i>Min/max storico</span>
+			<span><i style="background:#fd7e14"></i>Ora attuale</span>
 		</div>
 	</div>
 

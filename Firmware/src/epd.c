@@ -992,7 +992,7 @@ const struct holiday fixed_holidays[] = {
     {8, 12, "Immacolata"},
     {25, 12, "Natale"},
     {26, 12, "S.Stefano"},
-    {19, 5, "Comp. Corrado"},
+    {19, 5, "B.day Corrado"},
     {4, 5, "Star Wars Day"},
     {0, 0, NULL}  // terminatore
 };

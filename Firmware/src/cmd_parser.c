@@ -16,6 +16,16 @@ extern settings_struct settings;
 // known to fit a default BLE ATT payload without needing an MTU exchange.
 #define DBG_LOG_CHUNK_MAX 18
 
+// Temperature history read-back (cmd 0xEB): the 3 x 96-slot arrays behind
+// drawTempGraph() in epd.c, one slot every 15 minutes. Response is a fixed
+// 4-byte header + up to 16 values = 20 bytes, same "fits default ATT payload"
+// constraint as above.
+#define TEMP_HIST_SLOTS 96
+#define TEMP_HIST_CHUNK_MAX 16
+extern uint8_t min_temp[TEMP_HIST_SLOTS];
+extern uint8_t max_temp[TEMP_HIST_SLOTS];
+extern uint8_t day_temp[TEMP_HIST_SLOTS];
+
 #define testPin GPIO_PD3
 void cmd_parser(void * p){
 	rf_packet_att_data_t *req = (rf_packet_att_data_t*)p;
@@ -24,7 +34,9 @@ void cmd_parser(void * p){
 	// excluded here: logging the 0xE9 "read next chunk" command feeds back
 	// into the very buffer it's reading, so a download would never reach
 	// "0 bytes remaining" -- the log kept growing by one entry per chunk.
-	if (inData != 0xE8 && inData != 0xE9 && inData != 0xEA)
+	// 0xEB (temperature history read) is excluded too: one full download is
+	// 18 requests, which would flush most of the 1KB log for nothing.
+	if (inData != 0xE8 && inData != 0xE9 && inData != 0xEA && inData != 0xEB)
 		printf("[CMD] 0x%x 0x%x 0x%x\r\n", inData, req->dat[1], req->dat[2]);
 	if(inData == 0xFF){
 	gpio_set_func(testPin, AS_GPIO);
@@ -106,5 +118,31 @@ void cmd_parser(void * p){
 	}
 	else if(inData == 0xEA){// clear diagnostic log
 		dbg_log_clear();
+	}
+	else if(inData == 0xEB){// read temperature history chunk: dat[1] = array (0=min,1=max,2=day), dat[2] = slot offset
+		// Response (notify on this same characteristic):
+		// [0]=0xEB tag, [1]=array, [2]=offset, [3]=current slot index, [4..]=values.
+		// The 0xEB tag can't collide with the 0xE9 response, whose first byte
+		// is the high byte of "remaining" (<= DBG_LOG_SIZE, so at most 0x04).
+		// Out-of-range requests are answered with an empty payload rather than
+		// ignored, so the client never waits for a notify that won't come.
+		uint8_t part = req->dat[1];
+		uint8_t offset = req->dat[2];
+		const uint8_t *src = (part == 0) ? min_temp : (part == 1) ? max_temp : (part == 2) ? day_temp : NULL;
+		struct date_time now = get_time();
+		uint8_t out_buffer[4 + TEMP_HIST_CHUNK_MAX];
+		uint8_t n = 0;
+		if (src != NULL && offset < TEMP_HIST_SLOTS)
+		{
+			n = TEMP_HIST_SLOTS - offset;
+			if (n > TEMP_HIST_CHUNK_MAX)
+				n = TEMP_HIST_CHUNK_MAX;
+			memcpy(&out_buffer[4], &src[offset], n);
+		}
+		out_buffer[0] = 0xEB;
+		out_buffer[1] = part;
+		out_buffer[2] = offset;
+		out_buffer[3] = now.tm_hour * 4 + now.tm_min / 15; // same indexing as epd_update()/drawTempGraph()
+		bls_att_pushNotifyData(RxTx_CMD_OUT_DP_H, out_buffer, 4 + n);
 	}
 }
